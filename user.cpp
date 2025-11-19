@@ -310,6 +310,9 @@ int main(int argc, char *argv[])
                     cout << "User doesn't exist" << endl;
                 else if (args[1] == "OK")
                     cout << "Password changed successfully" << endl;
+                
+                freeaddrinfo(res);
+                close(fd);
 
                 break;
             }

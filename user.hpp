@@ -15,7 +15,7 @@
 using namespace std;
 
 #define PORT "58010"
-#define IPADDRESS "MartimClaudino"                  //    "tejo.tecnico.ulisboa.pt"     // Change into the lt5 address    
+#define IPADDRESS "tejo.tecnico.ulisboa.pt"     //  "MartimClaudino"     // Change into the lt5 address    
 
 typedef enum
 {
