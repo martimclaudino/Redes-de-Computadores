@@ -164,8 +164,9 @@ ssize_t send_TCP_message(int fd, const string &message)
     return n;
 }
 
-ssize_t receive_TCP_message(int fd)
+ServerResponse receive_TCP_message(int fd)
 {
+    ServerResponse server_response;
     string result;
     char buffer[128];
     while (true)
@@ -173,8 +174,9 @@ ssize_t receive_TCP_message(int fd)
         ssize_t n = read(fd, buffer, sizeof(buffer) - 1);
         if (n == -1)
         {
+            server_response.status = n;
             perror("receive");
-            return n;
+            return server_response;
         }
         if (n == 0) {
             // connection closed
@@ -186,8 +188,9 @@ ssize_t receive_TCP_message(int fd)
             break;  // end of message
     }
     
-    cout << "Received message: " << string(result) << endl;
-    return n;
+    string msg(buffer,n);
+    server_response.msg = msg;
+    return server_response;
 }
 
 int main(int argc, char *argv[])
@@ -209,7 +212,7 @@ int main(int argc, char *argv[])
 
     cout << "IP: " << ip << "\nPort: " << port << endl;
 
-    bool loggedIn = false;
+    ActiveUser activeUser;
 
     while(true)
     {
@@ -229,7 +232,7 @@ int main(int argc, char *argv[])
         {
             case CMD_LOGIN: {
 
-                if (loggedIn)
+                if (activeUser.loggedIn)
                 {
                     cout << "You are already logged in. If you want to switch accounts please logout first." << endl;
                     continue;
@@ -245,13 +248,13 @@ int main(int argc, char *argv[])
                 
                 if (send_UDP_message(fd, message) == -1)
                 {
-                    cerr << "Error sending login message to server." << endl;
+                    cerr << "Error sending message to server." << endl;
                     continue;
                 }
                 ServerResponse server_response = receive_UDP_message(fd);
                 if (server_response.status == -1)
                 {
-                    cerr << "Error receiving login response from server." << endl;
+                    cerr << "Error receiving response from server." << endl;
                     continue;
                 }
                 auto args = split(server_response.msg);
@@ -265,14 +268,14 @@ int main(int argc, char *argv[])
                 
                 freeaddrinfo(res);
                 close(fd);
-                loggedIn = true;
-                
+                activeUser.loggedIn = true;
+
                 break;
             }
 
             case CMD_CHANGEPASS: {
 
-                if (!loggedIn)
+                if (!activeUser.loggedIn)
                 {
                     cout << "You need to be logged in to change your password." << endl;
                     continue;
@@ -281,40 +284,63 @@ int main(int argc, char *argv[])
                 if(!verify_changePass(args))
                     continue;
 
-                cout << "Changing password from " << args[1] << " to " << args[2] << endl;
-
                 fd = establish_TCP_connection();
+
+                string message;
+                message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2];
+
+                if (send_TCP_message(fd, message) == -1)
+                {
+                    cerr << "Error sending message to server." << endl;
+                    continue;
+                }
+                ServerResponse server_response = receive_TCP_message(fd);
+                if (server_response.status == -1)
+                {
+                    cerr << "Error receiving response from server." << endl;
+                    continue;
+                }
+                auto args = split(server_response.msg);
+
+                if (args[1] == "NLG")
+                    cout << "No user is logged in" << endl;
+                else if (args[1] == "NOK")
+                    cout << "Password is not correct" << endl;
+                else if (args[1] == "NID")
+                    cout << "User doesn't exist" << endl;
+                else if (args[1] == "OK")
+                    cout << "Password changed successfully" << endl;
 
                 break;
             }
 
             case CMD_UNREGISTER: {
 
-                if (!loggedIn)
+                if (!activeUser.loggedIn)
                 {
                     cout << "You need to be logged in to unregister." << endl;
                     continue;
                 }
                 // UDP request to server
-                loggedIn = false; // if server says unregister was successful
+                activeUser.loggedIn = false; // if server says unregister was successful
                 break;
             }
 
             case CMD_LOGOUT: {
 
-                if (!loggedIn)
+                if (!activeUser.loggedIn)
                 {
                     cout << "You are not logged in." << endl;
                     continue;
                 }
                 // UDP request to server
-                loggedIn = false; // if server says logout was successful
+                activeUser.loggedIn = false; // if server says logout was successful
                 break;
             }
 
             case CMD_EXIT: {
                 
-                if (loggedIn)
+                if (activeUser.loggedIn)
                 {
                     cout << "You are currently logged in. Please logout before exiting." << endl;
                     continue;
@@ -327,7 +353,7 @@ int main(int argc, char *argv[])
 
             case CMD_CREATE: {
 
-                if (!loggedIn)
+                if (!activeUser.loggedIn)
                 {
                     cout << "You need to be logged in to create an event." << endl;
                     continue;

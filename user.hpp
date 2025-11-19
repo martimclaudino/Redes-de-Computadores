@@ -36,6 +36,12 @@ typedef enum
 
 typedef struct
 {
+    bool loggedIn = false;
+    string userId;
+} ActiveUser;
+
+typedef struct
+{
     int status;
     string msg;
 } ServerResponse;
@@ -56,7 +62,7 @@ int establish_TCP_connection();
 
 ssize_t send_TCP_message(int fd, const string &message);
 
-ssize_t receive_TCP_message(int fd);
+ServerResponse receive_TCP_message(int fd);
 
 bool verify_login(vector<string> &args);
 
