@@ -1,0 +1,5 @@
+./user [-n ESIP] [-p ESport] tem de estar por ordem ou pode vir primeiro a port e dps o ip?
+
+se eu tentar dar log in quando já estou logged in, quem é que faz essa verificação? a UserApp ou o ES?
+
+Num login, UserApp manda LIN 109490 password e o ES manda RLI OK ou NOK ou REG?
