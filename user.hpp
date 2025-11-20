@@ -15,7 +15,7 @@
 using namespace std;
 
 #define PORT "58010"
-#define IPADDRESS "tejo.tecnico.ulisboa.pt"     //  "MartimClaudino"     // Change into the lt5 address    
+#define IPADDRESS "MartimClaudino"     // "tejo.tecnico.ulisboa.pt"      // Change into the lt5 address    
 
 typedef enum
 {
@@ -36,8 +36,9 @@ typedef enum
 
 typedef struct
 {
-    bool loggedIn = false;
+    bool loggedIn;
     string userId;
+    string password;
 } ActiveUser;
 
 typedef struct
@@ -64,6 +65,14 @@ ssize_t send_TCP_message(int fd, const string &message);
 
 ServerResponse receive_TCP_message(int fd);
 
-bool verify_login(vector<string> &args);
+bool verify_login(const vector<string> &args);
 
-bool verify_changePass(vector<string> &args);
+int login (const vector<string> &args, ActiveUser &activeUser);
+
+bool verify_changePass(const vector<string> &args);
+
+int changePass(const vector<string> &args, ActiveUser &activeUser);
+
+bool verify_unregister(const vector<string> &args);
+
+int unregister(const vector<string> &args, ActiveUser &activeUser);

@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include "ES.hpp"
 
 #define PORT "58010"
 
@@ -48,7 +49,8 @@ int main()
             exit(1);
         write(1, "received: ", 10);
         write(1, buffer, n);
-        n = sendto(fd, buffer, n, 0,
+        string hardcoded_response = "RLI OK\n";
+        n = sendto(fd, hardcoded_response.c_str(), hardcoded_response.size(), 0,
                    (struct sockaddr *)&addr, addrlen);
         if (n == -1) /*error*/
             exit(1);

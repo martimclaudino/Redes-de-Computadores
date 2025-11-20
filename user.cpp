@@ -193,6 +193,197 @@ ServerResponse receive_TCP_message(int fd)
     return server_response;
 }
 
+bool verify_login(const vector<string> &args)
+{
+    if (args.size() != 3)
+    {
+        cout << "Invalid number of arguments for login. Usage: login <username> <password>" << endl;
+        return false;
+    }
+    string username = args[1];
+    string password = args[2];
+
+    if (username.length() != 6 || password.length() != 8)
+    {
+        cout << "Username or password have the wrong size. Username length is 6 and password length is 8." << endl;
+        return false;
+    }
+    return true;
+}
+
+int login (const vector<string> &args, ActiveUser &activeUser)
+{
+    if (activeUser.loggedIn)
+    {
+        cout << "You are already logged in. If you want to switch accounts please logout first." << endl;
+        return 1;
+    }
+
+    if (!verify_login(args))
+        return 1;
+
+    fd = establish_UDP_connection();
+    
+    string message;
+    message = "LIN " + args[1] + " " + args[2];
+    
+    if (send_UDP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_UDP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto login_result = split(server_response.msg);
+
+    if (login_result[1] == "OK")
+    {
+        cout << "Successful login" << endl;
+        activeUser.loggedIn = true;
+        activeUser.userId = args[1];
+        activeUser.password = args[2];
+    }
+    else if (login_result[1] == "NOK")
+        cout << "Unsuccessful login" << endl;
+    else if (login_result[1] == "REG")
+    {
+        cout << "New user registered" << endl;
+        activeUser.loggedIn = true;
+        activeUser.userId = args[1];
+        activeUser.password = args[2];
+    }
+    
+    freeaddrinfo(res);
+    close(fd);
+
+    return 0;
+}
+
+bool verify_changePass(const vector<string> &args){
+
+    if (args.size() != 3)
+    {
+        cout << "Invalid number of arguments for changePass. Usage: changePass <old_password> <new_password>" << endl;
+        return false;
+    }
+    string old_password = args[1];
+    string new_password = args[2];
+
+    if (old_password.length() != 8 || new_password.length() != 8)
+    {
+        cout << "Passwords have the wrong size. Password length is 8." << endl;
+        return false;
+    }
+    return true;
+}
+
+int changePass(const vector<string> &args, ActiveUser &activeUser)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You need to be logged in to change your password." << endl;
+        return 1;
+    }
+
+    if(!verify_changePass(args))
+        return 1;
+
+    fd = establish_TCP_connection();
+
+    string message;
+    message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2];
+
+    if (send_TCP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto changePass_result = split(server_response.msg);
+
+    if (changePass_result[1] == "NLG")
+        cout << "No user is logged in" << endl;
+    else if (changePass_result[1] == "NOK")
+        cout << "Password is not correct" << endl;
+    else if (changePass_result[1] == "NID")
+        cout << "User doesn't exist" << endl;
+    else if (changePass_result[1] == "OK")
+        {
+            cout << "Password changed successfully" << endl;
+            activeUser.password = args[2];
+        }
+    
+    freeaddrinfo(res);
+    close(fd);
+
+    return 0;
+}
+
+bool verify_unregister(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for unregister. Usage: unregister" << endl;
+        return false;
+    }
+    return true;
+}
+
+int unregister(const vector<string> &args, ActiveUser &activeUser)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You need to be logged in to unregister." << endl;
+        return 1;
+    }
+    if (!verify_unregister(args))
+        return 1;
+
+    fd = establish_UDP_connection();
+    
+    string message;
+    message = "UNR" + activeUser.userId + " " + activeUser.password;
+    
+    if (send_UDP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_UDP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto login_result = split(server_response.msg);
+
+    if (login_result[1] == "OK")
+    {
+        cout << "Successful login" << endl;
+        activeUser.loggedIn = true;
+    }
+    else if (login_result[1] == "NOK")
+        cout << "Unsuccessful login" << endl;
+    else if (login_result[1] == "REG")
+    {
+        cout << "New user registered" << endl;
+        activeUser.loggedIn = true;
+    }
+    
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc == 5)
@@ -213,10 +404,10 @@ int main(int argc, char *argv[])
     cout << "IP: " << ip << "\nPort: " << port << endl;
 
     ActiveUser activeUser;
+    activeUser.loggedIn = false;
 
     while(true)
     {
-
         cout << "> ";
 
         if (!getline(cin, input_buffer))
@@ -232,87 +423,14 @@ int main(int argc, char *argv[])
         {
             case CMD_LOGIN: {
 
-                if (activeUser.loggedIn)
-                {
-                    cout << "You are already logged in. If you want to switch accounts please logout first." << endl;
-                    continue;
-                }
-
-                if (!verify_login(args))
-                    continue;
-
-                fd = establish_UDP_connection();
-                
-                string message;
-                message = "LIN " + args[1] + " " + args[2];
-                
-                if (send_UDP_message(fd, message) == -1)
-                {
-                    cerr << "Error sending message to server." << endl;
-                    continue;
-                }
-                ServerResponse server_response = receive_UDP_message(fd);
-                if (server_response.status == -1)
-                {
-                    cerr << "Error receiving response from server." << endl;
-                    continue;
-                }
-                auto args = split(server_response.msg);
-
-                if (args[1] == "OK")
-                    cout << "Successful login" << endl;
-                else if (args[1] == "NOK")
-                    cout << "Successful login" << endl;
-                else if (args[1] == "REG")
-                    cout << "New user registered" << endl;
-                
-                freeaddrinfo(res);
-                close(fd);
-                activeUser.loggedIn = true;
+                login(args, activeUser);
 
                 break;
             }
 
             case CMD_CHANGEPASS: {
 
-                if (!activeUser.loggedIn)
-                {
-                    cout << "You need to be logged in to change your password." << endl;
-                    continue;
-                }
-
-                if(!verify_changePass(args))
-                    continue;
-
-                fd = establish_TCP_connection();
-
-                string message;
-                message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2];
-
-                if (send_TCP_message(fd, message) == -1)
-                {
-                    cerr << "Error sending message to server." << endl;
-                    continue;
-                }
-                ServerResponse server_response = receive_TCP_message(fd);
-                if (server_response.status == -1)
-                {
-                    cerr << "Error receiving response from server." << endl;
-                    continue;
-                }
-                auto args = split(server_response.msg);
-
-                if (args[1] == "NLG")
-                    cout << "No user is logged in" << endl;
-                else if (args[1] == "NOK")
-                    cout << "Password is not correct" << endl;
-                else if (args[1] == "NID")
-                    cout << "User doesn't exist" << endl;
-                else if (args[1] == "OK")
-                    cout << "Password changed successfully" << endl;
-                
-                freeaddrinfo(res);
-                close(fd);
+                changePass(args, activeUser);
 
                 break;
             }
@@ -368,40 +486,4 @@ int main(int argc, char *argv[])
     }
 
     return 0;
-}
-
-bool verify_login(vector<string> &args)
-{
-    if (args.size() != 3)
-    {
-        cout << "Invalid number of arguments for login. Usage: login <username> <password>" << endl;
-        return false;
-    }
-    string username = args[1];
-    string password = args[2];
-
-    if (username.length() != 6 || password.length() != 8)
-    {
-        cout << "Username or password have the wrong size. Username length is 6 and password length is 8." << endl;
-        return false;
-    }
-    return true;
-}
-
-bool verify_changePass(vector<string> &args){
-
-    if (args.size() != 3)
-    {
-        cout << "Invalid number of arguments for changePass. Usage: changePass <old_password> <new_password>" << endl;
-        return false;
-    }
-    string old_password = args[1];
-    string new_password = args[2];
-
-    if (old_password.length() != 8 || new_password.length() != 8)
-    {
-        cout << "Passwords have the wrong size. Password length is 8." << endl;
-        return false;
-    }
-    return true;
 }
