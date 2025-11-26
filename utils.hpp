@@ -36,4 +36,11 @@ bool verify_unregister(const vector<string> &args);
 
 int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
+bool verify_logout(const vector<string> &args);
+
+int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+
+bool verify_exit(const vector<string> &args);
+
+int exit(const vector<string> &args, ActiveUser &activeUser);
 #endif

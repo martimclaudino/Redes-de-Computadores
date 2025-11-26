@@ -85,26 +85,15 @@ int main(int argc, char *argv[])
 
             case CMD_LOGOUT: {
 
-                if (!activeUser.loggedIn)
-                {
-                    cout << "You are not logged in." << endl;
-                    continue;
-                }
-                // UDP request to server
-                activeUser.loggedIn = false; // if server says logout was successful
+                logout(args, activeUser, ip, port, res, addr);
+
                 break;
             }
 
             case CMD_EXIT: {
                 
-                if (activeUser.loggedIn)
-                {
-                    cout << "You are currently logged in. Please logout before exiting." << endl;
-                    continue;
-                }
-                cout << "Exiting application." << endl;
-                // Close any open connections
-                exit(0);
+                exit(args, activeUser);
+                
                 break;
             }
 

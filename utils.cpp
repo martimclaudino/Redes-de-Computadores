@@ -239,4 +239,85 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     return 0;
 }
 
+bool verify_logout(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for logout. Usage: logout" << endl;
+        return false;
+    }
+    return true;
+}
+
+int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You are not logged in." << endl;
+        return 1;
+    }
+    if (!verify_logout(args))
+        return 1;
+
+    int fd = establish_UDP_connection(ip, port, res);
+    
+    string message;
+    message = "LOU " + activeUser.userId + " " + activeUser.password;
+    
+    if (send_UDP_message(fd, message, res) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_UDP_message(fd, addr);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto logout_result = split(server_response.msg);
+
+    if (logout_result[1] == "OK")
+    {
+        cout << "Successful logout" << endl;
+        activeUser.loggedIn = false;
+    }
+    else if (logout_result[1] == "NOK")
+        cout << "Unsuccessful logout" << endl;
+    else if (logout_result[1] == "UNR")
+        cout << "User isn't registered" << endl;
+    else if (logout_result[1] == "WRP")
+        cout << "Wrong password" << endl;
+    
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
+bool verify_exit(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for exit. Usage: exit" << endl;
+        return false;
+    }
+    return true;
+}
+
+int exit(const vector<string> &args, ActiveUser &activeUser)
+{
+    if (!verify_exit(args))
+        return 1;
+
+    if (activeUser.loggedIn)
+    {
+        cout << "You are currently logged in. Please logout before exiting." << endl;
+        return 1;
+    }
+    cout << "Exiting application." << endl;
+    // Close any open connections
+    exit(0);
+    return 0;
+}
+
 #endif
