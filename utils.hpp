@@ -43,4 +43,7 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
 bool verify_exit(const vector<string> &args);
 
 int exit(const vector<string> &args, ActiveUser &activeUser);
+
+bool verify_create(const vector<string> &args);
+
 #endif

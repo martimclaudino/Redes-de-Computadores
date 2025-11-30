@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <filesystem>
 
 #include "common.hpp"
 #include "protocols.hpp"
@@ -318,6 +319,32 @@ int exit(const vector<string> &args, ActiveUser &activeUser)
     // Close any open connections
     exit(0);
     return 0;
+}
+
+bool verify_create(const vector<string> &args)
+{
+    if (args.size() != 5)
+    {
+        cout << "Invalid number of arguments for create. Usage: create <name> <event_fname> <date> <capacity>" << endl;
+        return false;
+    }
+    int day, month, year, hour, minute;
+    if (sscanf(args[4].c_str(), "%2d-%2d-%4d %2d:%2d", &day, &month, &year, &hour, &minute) != 5)
+    {
+        cout << "Date format is incorrect. Please use DD-MM-YYYY HH:MM format." << endl;
+        return false;
+    }
+    if (day < 1 || day > 31 || month < 1 || month > 12 || hour < 0 || hour > 23 || minute < 0 || minute > 59)
+    {
+        cout << "Date values are out of range." << endl;
+        return false;
+    }
+    if (!std::filesystem::exists(args[2]))
+    {
+        cout << "Event file does not exist." << endl;
+        return false;
+    }
+    return true;
 }
 
 #endif

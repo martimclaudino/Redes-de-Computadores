@@ -1,3 +1,5 @@
 ./user [-n ESIP] [-p ESport] tem de estar por ordem ou pode vir primeiro a port e dps o ip?
 
 se eu tentar dar log in quando já estou logged in, quem é que faz essa verificação? a UserApp ou o ES?
+
+as funções de TCP, no fim o user tem de fechar a sessão TCP. no lab 1 não tem nada disso, é só dar close normalmente?
