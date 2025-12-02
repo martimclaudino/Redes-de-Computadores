@@ -46,4 +46,6 @@ int exit(const vector<string> &args, ActiveUser &activeUser);
 
 bool verify_create(const vector<string> &args);
 
+int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+
 #endif

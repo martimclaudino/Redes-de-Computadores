@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <filesystem>
+#include <fstream>
 
 #include "common.hpp"
 #include "protocols.hpp"
@@ -156,27 +157,29 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
-        return 1;
-    }
-    ServerResponse server_response = receive_TCP_message(fd);
-    if (server_response.status == -1)
+    } 
+    else 
     {
-        cerr << "Error receiving response from server." << endl;
-        return 1;
-    }
-    auto changePass_result = split(server_response.msg);
-
-    if (changePass_result[1] == "NLG")
-        cout << "No user is logged in" << endl;
-    else if (changePass_result[1] == "NOK")
-        cout << "Password is not correct" << endl;
-    else if (changePass_result[1] == "NID")
-        cout << "User doesn't exist" << endl;
-    else if (changePass_result[1] == "OK")
+        ServerResponse server_response = receive_TCP_message(fd);
+        if (server_response.status == -1)
         {
-            cout << "Password changed successfully" << endl;
-            activeUser.password = args[2];
+            cerr << "Error receiving response from server." << endl;
+            return 1;
         }
+        auto changePass_result = split(server_response.msg);
+
+        if (changePass_result[1] == "NLG")
+            cout << "No user is logged in" << endl;
+        else if (changePass_result[1] == "NOK")         // FIX ME verificar se é mesmo NOK
+            cout << "Password is not correct" << endl;
+        else if (changePass_result[1] == "NID")
+            cout << "User doesn't exist" << endl;
+        else if (changePass_result[1] == "OK")
+            {
+                cout << "Password changed successfully" << endl;
+                activeUser.password = args[2];
+            }
+    }
     
     freeaddrinfo(res);
     close(fd);
@@ -325,7 +328,12 @@ bool verify_create(const vector<string> &args)
 {
     if (args.size() != 5)
     {
-        cout << "Invalid number of arguments for create. Usage: create <name> <event_fname> <date> <capacity>" << endl;
+        cout << "Invalid number of arguments for create. Usage: create <name> <event_fname> <date> <number_of_attendees>" << endl;
+        return false;
+    }
+    if (args[1].length() > 10)
+    {
+        cout << "Max name length is 10 characters." << endl;
         return false;
     }
     int day, month, year, hour, minute;
@@ -345,6 +353,84 @@ bool verify_create(const vector<string> &args)
         return false;
     }
     return true;
+}
+
+int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to create an event." << endl;
+        return 1;
+    }
+    if (!verify_create(args))
+        return 1;
+    string eventName = args[1];
+    string fileName = args[2];
+    string date = args[3];
+    string attendance = args[4];
+    
+    ifstream file(fileName, ios::binary | ios::ate);
+
+    if (!file.is_open())    // Just in case the file gets deleted or moved after verification
+    {
+        cout << "Error: File '" << fileName << "' not found or cannot be read." << endl;
+        return 1;
+    }
+
+    streamsize fileSize = file.tellg();
+
+    file.seekg(0, ios::beg);
+
+    vector<char> fileData(fileSize);
+
+    if (!file.read(fileData.data(), fileSize)) 
+    {
+        cout << "Error: Could not read file content." << endl;
+        return 1;
+    }
+    file.close();
+
+    stringstream header;
+    header << "CRE " << activeUser.userId << " " << activeUser.password << " "
+           << eventName << " " << date << " " << attendance << " "
+           << fileName << " " << fileSize << " ";
+
+    string fullMessage = header.str();
+
+    fullMessage.append(fileData.data(), fileSize);
+
+    fullMessage += "\n";    // FIX ME maybe not necessary
+
+    int fd = establish_TCP_connection(ip, port, res);
+
+    if (send_TCP_message(fd, fullMessage) == -1) 
+    {
+        cout << "Error sending create request." << endl;
+    }
+    else
+    {
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+        {
+            cerr << "Error receiving response from server." << endl;
+            return 1;
+        }
+        auto create_result = split(server_response.msg);
+
+        if (create_result[1] == "NOK")
+            cout << "Event couldn't be created" << endl;
+        else if (create_result[1] == "NLG")
+            cout << "No user is logged in" << endl;
+        else if (create_result[1] == "WRP")
+            cout << "Password is not correct" << endl;
+        else if (create_result[1] == "OK")
+            cout << "Event created successfully. Event ID: " << create_result[2] << endl;
+    }
+    
+    freeaddrinfo(res);
+    close(fd);
+    
+    return 0;
 }
 
 #endif

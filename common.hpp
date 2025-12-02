@@ -1,3 +1,5 @@
+// Group 10
+
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
@@ -6,8 +8,8 @@
 
 using namespace std;
 
-#define PORT "58010"
-#define IPADDRESS "MartimClaudino"     // "tejo.tecnico.ulisboa.pt"       // Change into the lt5 address    
+#define PORT "58000"
+#define IPADDRESS "tejo.tecnico.ulisboa.pt"     // "MartimClaudino"       // Change into the lt5 address    
 
 typedef enum
 {

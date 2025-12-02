@@ -99,12 +99,8 @@ int main(int argc, char *argv[])
 
             case CMD_CREATE: {
 
-                if (!activeUser.loggedIn)
-                {
-                    cout << "You need to be logged in to create an event." << endl;
-                    continue;
-                }
-                // UDP request to server
+                create(args, activeUser, ip, port, res, addr);
+                
                 break;
             }
         }
