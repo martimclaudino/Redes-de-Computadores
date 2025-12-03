@@ -53,7 +53,6 @@ int send_UDP_message(int fd, const string &message, struct addrinfo* &res)
         return n;
     }
     
-    cout << "Sent message: " << message << endl;
     return n;
 }
 

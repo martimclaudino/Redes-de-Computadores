@@ -326,7 +326,7 @@ int exit(const vector<string> &args, ActiveUser &activeUser)
 
 bool verify_create(const vector<string> &args)
 {
-    if (args.size() != 5)
+    if (args.size() != 6)   // Date is 2 arguments: date and time
     {
         cout << "Invalid number of arguments for create. Usage: create <name> <event_fname> <date> <number_of_attendees>" << endl;
         return false;
@@ -337,7 +337,12 @@ bool verify_create(const vector<string> &args)
         return false;
     }
     int day, month, year, hour, minute;
-    if (sscanf(args[4].c_str(), "%2d-%2d-%4d %2d:%2d", &day, &month, &year, &hour, &minute) != 5)
+    if (sscanf(args[3].c_str(), "%2d-%2d-%4d", &day, &month, &year) != 3)
+    {
+        cout << "Date format is incorrect. Please use DD-MM-YYYY HH:MM format." << endl;
+        return false;
+    }
+    if (sscanf(args[4].c_str(), "%2d:%2d", &hour, &minute) != 2)
     {
         cout << "Date format is incorrect. Please use DD-MM-YYYY HH:MM format." << endl;
         return false;
@@ -367,7 +372,8 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     string eventName = args[1];
     string fileName = args[2];
     string date = args[3];
-    string attendance = args[4];
+    string time = args[4];
+    string attendance = args[5];
     
     ifstream file(fileName, ios::binary | ios::ate);
 
@@ -392,7 +398,7 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
 
     stringstream header;
     header << "CRE " << activeUser.userId << " " << activeUser.password << " "
-           << eventName << " " << date << " " << attendance << " "
+           << eventName << " " << date << " " << time << " " << attendance << " "
            << fileName << " " << fileSize << " ";
 
     string fullMessage = header.str();
@@ -410,6 +416,7 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     else
     {
     ServerResponse server_response = receive_TCP_message(fd);
+    cout << "Server response: " << server_response.msg << endl;
     if (server_response.status == -1)
         {
             cerr << "Error receiving response from server." << endl;
