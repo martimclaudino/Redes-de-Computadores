@@ -82,7 +82,7 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     int fd = establish_UDP_connection(ip, port, res);
     
     string message;
-    message = "LIN " + args[1] + " " + args[2];
+    message = "LIN " + args[1] + " " + args[2] + "\n";
     
     if (send_UDP_message(fd, message, res) == -1)
     {
@@ -96,7 +96,6 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         return 1;
     }
     auto login_result = split(server_response.msg);
-
     if (login_result[1] == "OK")
     {
         cout << "Successful login" << endl;
@@ -105,7 +104,7 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         activeUser.password = args[2];
     }
     else if (login_result[1] == "NOK")
-        cout << "Unsuccessful login" << endl;
+        cout << "Password doesn't match" << endl;
     else if (login_result[1] == "REG")
     {
         cout << "New user registered" << endl;
@@ -152,7 +151,7 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     int fd = establish_TCP_connection(ip, port, res);
 
     string message;
-    message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2];
+    message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2] + "\n";
 
     if (send_TCP_message(fd, message) == -1)
     {
@@ -210,7 +209,7 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     int fd = establish_UDP_connection(ip, port, res);
     
     string message;
-    message = "UNR" + activeUser.userId + " " + activeUser.password;
+    message = "UNR " + activeUser.userId + " " + activeUser.password + "\n";
     
     if (send_UDP_message(fd, message, res) == -1)
     {
@@ -223,20 +222,21 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         cerr << "Error receiving response from server." << endl;
         return 1;
     }
-    auto login_result = split(server_response.msg);
+    auto unregister_result = split(server_response.msg);
 
-    if (login_result[1] == "OK")
+    if (unregister_result[1] == "OK")
     {
-        cout << "Successful login" << endl;
-        activeUser.loggedIn = true;
+        cout << "Successfully unregistered" << endl;
+        activeUser.loggedIn = false;
     }
-    else if (login_result[1] == "NOK")
-        cout << "Unsuccessful login" << endl;
-    else if (login_result[1] == "REG")
+    else if (unregister_result[1] == "NOK")
+        cout << "No user logged in" << endl;
+    else if (unregister_result[1] == "UNR")
     {
-        cout << "New user registered" << endl;
-        activeUser.loggedIn = true;
+        cout << "The user isn't registered" << endl;
     }
+    else if (unregister_result[1] == "WRP")
+        cout << "Wrong password" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -266,7 +266,7 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     int fd = establish_UDP_connection(ip, port, res);
     
     string message;
-    message = "LOU " + activeUser.userId + " " + activeUser.password;
+    message = "LOU " + activeUser.userId + " " + activeUser.password + "\n";
     
     if (send_UDP_message(fd, message, res) == -1)
     {
@@ -399,7 +399,7 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
 
     fullMessage.append(fileData.data(), fileSize);
 
-    fullMessage += "\n";    // FIX ME maybe not necessary
+    fullMessage += "\n";
 
     int fd = establish_TCP_connection(ip, port, res);
 

@@ -61,9 +61,9 @@ ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr)
 {
     ServerResponse server_response;
     socklen_t addrlen = sizeof(addr);
-    char buffer[289];
+    char buffer[128];                                                    // FIX ME buffer size
 
-    int n = recvfrom(fd, buffer, 128, 0,
+    int n = recvfrom(fd, buffer, sizeof(buffer), 0,
                  (struct sockaddr *)&addr, &addrlen);
     
     server_response.status = n;
@@ -74,7 +74,7 @@ ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr)
         return server_response;
     }
 
-    string msg(buffer,128);
+    string msg(buffer,n);
     server_response.msg = msg;
     return server_response;
 }
