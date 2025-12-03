@@ -402,10 +402,13 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
            << fileName << " " << fileSize << " ";
 
     string fullMessage = header.str();
+    cout << "Full message header: " << fullMessage << endl;
 
     fullMessage.append(fileData.data(), fileSize);
 
     fullMessage += "\n";
+
+    cout << "Full message: " << fullMessage << endl;
 
     int fd = establish_TCP_connection(ip, port, res);
 
@@ -437,6 +440,126 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     freeaddrinfo(res);
     close(fd);
     
+    return 0;
+}
+
+bool verify_close(const vector<string> &args)
+{
+    if (args.size() != 2)
+    {
+        cout << "Invalid number of arguments for close. Usage: close <event_id>" << endl;
+        return false;
+    }
+    return true;
+}
+
+int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You need to be logged in to close an event." << endl;
+        return 1;
+    }
+    if (!verify_close(args))
+        return 1;
+
+    int fd = establish_TCP_connection(ip, port, res);
+    
+    string message;
+    message = "CLS " + activeUser.userId + " " + activeUser.password + " " + args[1] + "\n";
+    
+    if (send_TCP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto close_result = split(server_response.msg);
+
+    if (close_result[1] == "OK")
+    {
+        cout << "Event closed successfully" << endl;
+    }
+    else if (close_result[1] == "NOK")
+        cout << "User doesn't exist or password is incorrect" << endl;
+    else if (close_result[1] == "NLG")
+        cout << "No user is logged in" << endl;
+    else if (close_result[1] == "NOE")
+        cout << "Event doesn't exist" << endl;
+    else if (close_result[1] == "EOW")
+        cout << "Event wasn't created by the logged in user" << endl;
+    else if (close_result[1] == "SLD")
+        cout << "Event has already sold out" << endl;
+    else if (close_result[1] == "PST")
+        cout << "Event has already passed" << endl;
+    else if (close_result[1] == "CLO")
+        cout << "Event has already been closed" << endl;
+    
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
+bool verify_myEvents(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for myevents. Usage: myevents" << endl;
+        return false;
+    }
+    return true;
+}
+
+int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to view your events." << endl;
+        return 1;
+    }
+    if (!verify_myEvents(args))
+        return 1;
+
+    int fd = establish_UDP_connection(ip, port, res);
+    
+    string message;
+    message = "LME " + activeUser.userId + " " + activeUser.password + "\n";
+    
+    if (send_UDP_message(fd, message, res) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_UDP_message(fd, addr);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto myevents_result = split(server_response.msg);
+
+    if (myevents_result[1] == "NOK")
+        cout << "User hasn't created any events" << endl;
+    else if (myevents_result[1] == "NLG")
+        cout << "No user is logged in" << endl;
+    else if (myevents_result[1] == "OK")
+    {
+        cout << "Your events: " << endl;
+        for (size_t i = 2; i < myevents_result.size(); ++i)
+        {
+            cout << myevents_result[i] << myevents_result[i+1] << endl;
+        }
+    }
+    else if (myevents_result[1] == "WRP")
+        cout << "Password is not correct" << endl;
+    
+    freeaddrinfo(res);
+    close(fd);
     return 0;
 }
 

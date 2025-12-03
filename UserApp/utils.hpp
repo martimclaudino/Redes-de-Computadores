@@ -48,4 +48,12 @@ bool verify_create(const vector<string> &args);
 
 int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
+bool verify_close(const vector<string> &args);
+
+int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
+
+bool verify_myEvents(const vector<string> &args);
+
+int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+
 #endif

@@ -1,42 +1,54 @@
 # Compiler and Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -g
+# Adicionei -I. (raiz) e -IUserApp para o compilador encontrar os .hpp
+CXXFLAGS = -Wall -Wextra -std=c++17 -g -I. -IUserApp
+
+# Directories
+USER_DIR = UserApp
+ES_DIR = ESDIR
 
 # Targets
 all: user ES
 
-# ------------------- User Application -------------------
-# O executável 'user' junta 3 ficheiros objeto: user.o, protocols.o e utils.o
-user: user.o protocols.o utils.o
-	$(CXX) $(CXXFLAGS) -o user user.o protocols.o utils.o
-
-# user.o depende de user.cpp e dos cabeçalhos que ele inclui
-user.o: user.cpp common.hpp protocols.hpp utils.hpp
-	$(CXX) $(CXXFLAGS) -c user.cpp
-
-# protocols.o depende de protocols.cpp e do common.hpp
+# ------------------- Shared Objects -------------------
+# protocols.o fica na raiz
 protocols.o: protocols.cpp protocols.hpp common.hpp
-	$(CXX) $(CXXFLAGS) -c protocols.cpp
+	$(CXX) $(CXXFLAGS) -c protocols.cpp -o protocols.o
 
-# utils.o depende de utils.cpp e dos cabeçalhos que ele inclui
-utils.o: utils.cpp utils.hpp protocols.hpp common.hpp
-	$(CXX) $(CXXFLAGS) -c utils.cpp
+# ------------------- User Application -------------------
+# O executável 'user' fica na raiz para ser fácil de correr
+user: $(USER_DIR)/user.o protocols.o $(USER_DIR)/utils.o
+	$(CXX) $(CXXFLAGS) -o user $(USER_DIR)/user.o protocols.o $(USER_DIR)/utils.o
+
+# Compilar user.cpp (que está dentro de UserApp)
+$(USER_DIR)/user.o: $(USER_DIR)/user.cpp common.hpp protocols.hpp $(USER_DIR)/utils.hpp
+	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/user.cpp -o $(USER_DIR)/user.o
+
+# Compilar utils.cpp (que está dentro de UserApp)
+$(USER_DIR)/utils.o: $(USER_DIR)/utils.cpp $(USER_DIR)/utils.hpp protocols.hpp common.hpp
+	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/utils.cpp -o $(USER_DIR)/utils.o
 
 # ------------------- Server Application (ES) -------------------
-ES: ES.o
-	$(CXX) $(CXXFLAGS) -o ES ES.o
+# O executável 'ES' fica na raiz
+ES: $(ES_DIR)/ES.o
+	$(CXX) $(CXXFLAGS) -o ES $(ES_DIR)/ES.o
 
-# O ES.o depende do ES.cpp e do common.hpp (se o servidor usar structs)
-ES.o: ES.cpp common.hpp
-	$(CXX) $(CXXFLAGS) -c ES.cpp
+# Compilar ES.cpp (que está dentro de ESDIR)
+$(ES_DIR)/ES.o: $(ES_DIR)/ES.cpp common.hpp
+	$(CXX) $(CXXFLAGS) -c $(ES_DIR)/ES.cpp -o $(ES_DIR)/ES.o
 
 # ------------------- Clean -------------------
+# Limpa os .o dentro das pastas também
 clean:
-	rm -f *.o user ES
+	rm -f *.o $(USER_DIR)/*.o $(ES_DIR)/*.o user ES
 
-# ------------------- Run Targets (Opcional) -------------------
+# ------------------- Run Targets -------------------
+
+# Truque: Entra na pasta ESDIR e corre o executável que está na raiz (../ES)
+# Isto garante que os ficheiros criados ficam dentro de ESDIR!
 run_server: ES
-	./ES
+	@echo "Running Server inside ESDIR..."
+	cd $(ES_DIR) && ../ES
 
 run_user: user
 	./user

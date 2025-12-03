@@ -103,6 +103,20 @@ int main(int argc, char *argv[])
                 
                 break;
             }
+
+            case CMD_CLOSE: {
+                
+                close(args, activeUser, ip, port, res);
+
+                break;
+            }
+
+            case CMD_MYEVENTS: {
+                
+                myevents(args, activeUser, ip, port, res, addr);
+
+                break;
+            }
         }
     }
 
