@@ -550,9 +550,11 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
     else if (myevents_result[1] == "OK")
     {
         cout << "Your events: " << endl;
-        for (size_t i = 2; i < myevents_result.size(); ++i)
+        int i = 2;
+        while (i < myevents_result.size() - 1)
         {
-            cout << myevents_result[i] << myevents_result[i+1] << endl;
+            cout << myevents_result[i] << " " << myevents_result[i+1] << endl;
+            i +=2;
         }
     }
     else if (myevents_result[1] == "WRP")
