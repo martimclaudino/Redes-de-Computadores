@@ -565,4 +565,60 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
     return 0;
 }
 
+bool verify_list(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for list. Usage: list" << endl;
+        return false;
+    }
+    return true;
+}
+
+int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to list events." << endl;
+        return 1;
+    }
+    if (!verify_list(args))
+        return 1;
+
+    int fd = establish_TCP_connection(ip, port, res);
+    
+    string message;
+    message = "LST\n";
+    
+    if (send_TCP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto list_result = split(server_response.msg);
+
+    if (list_result[1] == "NOK")
+        cout << "No events have been created" << endl;
+    else if (list_result[1] == "OK")
+    {
+        cout << "Available events: " << endl;
+        int i = 2;
+        while (i < list_result.size() - 1)
+        {
+            cout << list_result[i] << " " << list_result[i+1] << " " << list_result[i+2] << list_result[i+3] << list_result[i+4] << endl;
+            i +=5;
+        }
+    }
+    
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
 #endif

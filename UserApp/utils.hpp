@@ -56,4 +56,8 @@ bool verify_myEvents(const vector<string> &args);
 
 int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
+bool verify_list(const vector<string> &args);
+
+int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+
 #endif

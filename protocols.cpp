@@ -134,7 +134,7 @@ ServerResponse receive_TCP_message(int fd)
 {
     ServerResponse server_response;
     string result;
-    char buffer[128];
+    char buffer[10000]; // FIX ME buffer size for each function
     ssize_t n;
     
     while (true)

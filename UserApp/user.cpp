@@ -117,6 +117,13 @@ int main(int argc, char *argv[])
 
                 break;
             }
+            
+            case CMD_LIST: {
+
+                list(args, activeUser, ip, port, res, addr);
+
+                break;
+            }
         }
     }
 
