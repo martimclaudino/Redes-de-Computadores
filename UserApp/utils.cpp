@@ -14,12 +14,14 @@
 #include <arpa/inet.h>
 #include <filesystem>
 #include <fstream>
+#include <filesystem>
 
 #include "common.hpp"
 #include "protocols.hpp"
 #include "utils.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
 
 CommandType parse_command(const string &cmd)
 {
@@ -620,5 +622,126 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
     close(fd);
     return 0;
 }
+
+bool verify_show(const vector<string> &args)
+{
+    if (args.size() != 2)
+    {
+        cout << "Invalid number of arguments for show. Usage: show <event_id>" << endl;
+        return false;
+    }
+    if (args[1].length() != 3)
+    {
+        cout << "Event ID must be 3 characters long." << endl;
+        return false;
+    }
+    if (args[1] < "001" || args[1] > "999")
+    {
+        cout << "Event ID must be between 001 and 999." << endl;
+        return false;
+    }
+    return true;
+}
+
+int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to show event details." << endl;
+        return 1;
+    }
+    if (!verify_show(args))
+        return 1;
+
+    int fd = establish_TCP_connection(ip, port, res);
+
+    string message;
+    message = "SED " + args[1] + "\n";
+
+    if (send_TCP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto show_result = split(server_response.msg);
+
+    if (show_result[1] == "NOK")
+        cout << "Event does not exist, there is no file to be sent or another problem occurred" << endl;
+    else if (show_result[1] == "OK")
+    {
+        cout << "Event details:" << endl;
+        cout << "Event created by user with ID: " << show_result[2] << endl;
+        cout << "Event Name: " << show_result[3] << endl;
+        cout << "Date: " << show_result[4] << " " << show_result[5] << endl;
+        cout << "Number of attendees: " << show_result[6] << endl;
+        cout << "Seats reserved: " << show_result[7] << endl;
+        cout << "Event File Name: " << show_result[8] << endl;
+        cout << "Event File Size: " << show_result[9] << " bytes" << endl;
+
+        long fileSize = stol(show_result[9]);
+
+        stringstream ss(server_response.msg);
+        string temp;
+        
+        // Removing all the header info to get to the file data
+        for(int i = 0; i < 10; ++i) 
+        {
+            ss >> temp;
+        }
+        // remove the last space before the file data
+        char space;
+        ss.read(&space, 1);
+
+        streampos dataStart = ss.tellg();
+
+        if (dataStart + (streampos)fileSize > (streampos)server_response.msg.size()) 
+        {
+            cout << "Error: Incomplete file data received." << endl;
+            freeaddrinfo(res);
+            close(fd);
+            return 1;
+        }
+        else 
+        {
+            string directoryName = "EVENTS";
+
+            // Check if the directory exists, if not create it
+            if (!fs::exists(directoryName))
+                fs::create_directory(directoryName);
+
+            fs::path filePath = fs::path(directoryName) / show_result[8];
+            // Save the file
+            ofstream outputFile(filePath, ios::binary);
+            
+            if (outputFile.is_open()) 
+            {
+                // write the file in the disk
+                outputFile.write(&server_response.msg[dataStart], fileSize);
+                
+                outputFile.close();
+                cout << "File '" << show_result[8] << "' saved successfully" << endl;
+            } 
+            else 
+            {
+                cout << "Error: Could not save file '" << show_result[8] << endl;
+                freeaddrinfo(res);
+                close(fd);
+                return 1;
+            }
+        }
+    }
+
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
+// FIX ME nas funções que criei se houver um erro a receber ou mandar mensagens do servidor, dá logo return mas eu tenho de dar free e close
 
 #endif

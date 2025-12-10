@@ -124,6 +124,13 @@ int main(int argc, char *argv[])
 
                 break;
             }
+
+            case CMD_SHOW: {
+                
+                show(args, activeUser, ip, port, res, addr);
+                
+                break;
+            }
         }
     }
 
