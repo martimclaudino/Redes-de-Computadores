@@ -113,6 +113,7 @@ int establish_TCP_connection(string &ip, string &port, struct addrinfo* &res)
 
 ssize_t send_TCP_message(int fd, const string &message)
 {
+    cout << "entrou no send tcp" << endl;
     ssize_t total_sent = 0;
     ssize_t message_length = message.size();
      ssize_t n;

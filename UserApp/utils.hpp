@@ -64,4 +64,9 @@ bool verify_show(const vector<string> &args);
 
 int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
+bool verify_reserve(const vector<string> &args);
+
+int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+
+
 #endif

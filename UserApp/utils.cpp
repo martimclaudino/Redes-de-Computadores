@@ -404,13 +404,10 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
            << fileName << " " << fileSize << " ";
 
     string fullMessage = header.str();
-    cout << "Full message header: " << fullMessage << endl;
 
     fullMessage.append(fileData.data(), fileSize);
 
     fullMessage += "\n";
-
-    cout << "Full message: " << fullMessage << endl;
 
     int fd = establish_TCP_connection(ip, port, res);
 
@@ -613,7 +610,7 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
         int i = 2;
         while (i < list_result.size() - 1)
         {
-            cout << list_result[i] << " " << list_result[i+1] << " " << list_result[i+2] << list_result[i+3] << list_result[i+4] << endl;
+            cout << list_result[i] << " " << list_result[i+1] << " " << list_result[i+2] << " " << list_result[i+3] << " " << list_result[i+4] << endl;
             i +=5;
         }
     }
@@ -736,6 +733,76 @@ int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
             }
         }
     }
+
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
+bool verify_reserve(const vector<string> &args)
+{
+    if (args.size() != 3)
+    {
+        cout << "Invalid number of arguments for show. Usage: reserve <event_id> <number_of_seats>" << endl;
+        return false;
+    }
+    if (args[1].length() != 3)
+    {
+        cout << "Event ID must be 3 characters long." << endl;
+        return false;
+    }
+    if (args[1] < "001" || args[1] > "999")
+    {
+        cout << "Event ID must be between 001 and 999." << endl;
+        return false;
+    }
+    return true;
+}
+
+int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to reserve seats." << endl;
+        return 1;
+    }
+    if (!verify_reserve(args))
+        return 1;
+
+    int fd = establish_TCP_connection(ip, port, res);
+
+    string message;
+    message = "RID " + activeUser.userId + " " + activeUser.password + " " + args[1] + " " + args[2] + "\n";
+
+    if (send_TCP_message(fd, message) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto show_result = split(server_response.msg);
+
+    if (show_result[1] == "NOK")
+        cout << "Event " << args[1] << " is not active" << endl;
+    else if (show_result[1] == "NLG")
+        cout << "No user logged in" << endl;
+    else if (show_result[1] == "CLS")
+        cout << "The event is closed" << endl;
+    else if (show_result[1] == "SLD")
+        cout << "The event is sold out" << endl;
+    else if (show_result[1] == "REJ")
+        cout << "There aren't enough seats available. There are only " << show_result[2] << " seats available" << endl;
+    else if (show_result[1] == "PST")
+        cout << "The event has already passed" << endl;
+    else if (show_result[1] == "WRP")
+        cout << "Wrong password" << endl;
+    else if (show_result[1] == "ACC")
+        cout << "The reservation has been made successfully" << endl;
 
     freeaddrinfo(res);
     close(fd);
