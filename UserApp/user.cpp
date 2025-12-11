@@ -135,6 +135,14 @@ int main(int argc, char *argv[])
             case CMD_RESERVE: {
                 
                 reserve(args, activeUser, ip, port, res, addr);
+
+                break;
+            }
+
+            case CMD_MYRESERVATIONS: {
+                
+                myreservations(args, activeUser, ip, port, res, addr);
+                
                 break;
             }
         }

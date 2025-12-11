@@ -68,5 +68,8 @@ bool verify_reserve(const vector<string> &args);
 
 int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
+bool verify_myreservations(const vector<string> &args);
+
+int myreservations(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
 #endif

@@ -36,7 +36,7 @@ CommandType parse_command(const string &cmd)
     if (cmd == "list") return CMD_LIST;
     if (cmd == "show") return CMD_SHOW;
     if (cmd == "reserve") return CMD_RESERVE;
-    if ((cmd == "myreservations") || (cmd == "myres")) return CMD_MYRESERVATIONS;
+    if ((cmd == "myreservations") || (cmd == "myr")) return CMD_MYRESERVATIONS;
     return CMD_INVALID;
 }
 
@@ -804,6 +804,64 @@ int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, stri
     else if (show_result[1] == "ACC")
         cout << "The reservation has been made successfully" << endl;
 
+    freeaddrinfo(res);
+    close(fd);
+    return 0;
+}
+
+bool verify_myreservations(const vector<string> &args)
+{
+    if (args.size() != 1)
+    {
+        cout << "Invalid number of arguments for myreservations. Usage: myreservations" << endl;
+        return false;
+    }
+    return true;
+}
+
+int myreservations(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+{
+    if (!activeUser.loggedIn)
+    {
+        cout << "You must be logged in to view your reservations." << endl;
+        return 1;
+    }
+    if (!verify_myreservations(args))
+        return 1;
+
+    int fd = establish_UDP_connection(ip, port, res);
+    
+    string message;
+    message = "LMR " + activeUser.userId + " " + activeUser.password + "\n";
+    
+    if (send_UDP_message(fd, message, res) == -1)
+    {
+        cerr << "Error sending message to server." << endl;
+        return 1;
+    }
+    ServerResponse server_response = receive_UDP_message(fd, addr);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        return 1;
+    }
+    auto myreservations_result = split(server_response.msg);
+
+    if (myreservations_result[1] == "NOK")
+        cout << "User has not made any reservations" << endl;
+    else if (myreservations_result[1] == "NLG")
+        cout << "You must be logged in to see your reservations" << endl;
+    else if (myreservations_result[1] == "OK")
+    {
+        cout << "Your reservations: " << endl;
+        int i = 2;
+        while (i < myreservations_result.size() - 1)
+        {
+            cout << myreservations_result[i] << " " << myreservations_result[i+1] << " " << myreservations_result[i+2] << " " << myreservations_result[i+3] << endl;
+            i +=4;
+        }
+    }
+    
     freeaddrinfo(res);
     close(fd);
     return 0;
