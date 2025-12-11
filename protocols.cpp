@@ -29,7 +29,7 @@ int establish_UDP_connection(string &ip, string &port, struct addrinfo* &res)
     if (errcode != 0)
     {
         cerr << "getaddrinfo error: " << gai_strerror(errcode) << endl;
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     // Create socket
@@ -37,7 +37,9 @@ int establish_UDP_connection(string &ip, string &port, struct addrinfo* &res)
     if (fd == -1)
     {
         perror("socket");
-        exit(EXIT_FAILURE);
+        freeaddrinfo(res);
+        res = nullptr;
+        return -1;
     }
     return fd;
 }
@@ -89,7 +91,7 @@ int establish_TCP_connection(string &ip, string &port, struct addrinfo* &res)
     if (errcode != 0)
     {
         cerr << "getaddrinfo error: " << gai_strerror(errcode) << endl;
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     // Create socket
@@ -97,7 +99,9 @@ int establish_TCP_connection(string &ip, string &port, struct addrinfo* &res)
     if (fd == -1)
     {
         perror("socket");
-        exit(EXIT_FAILURE);
+        freeaddrinfo(res);
+        res = nullptr;
+        return -1;
     }
 
     // Connect to server
@@ -105,7 +109,9 @@ int establish_TCP_connection(string &ip, string &port, struct addrinfo* &res)
     {
         perror("connect");
         close(fd);
-        exit(EXIT_FAILURE);
+        freeaddrinfo(res);
+        res = nullptr;
+        return -1;
     }
 
     return fd;
@@ -113,7 +119,6 @@ int establish_TCP_connection(string &ip, string &port, struct addrinfo* &res)
 
 ssize_t send_TCP_message(int fd, const string &message)
 {
-    cout << "entrou no send tcp" << endl;
     ssize_t total_sent = 0;
     ssize_t message_length = message.size();
      ssize_t n;

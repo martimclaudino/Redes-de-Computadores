@@ -82,6 +82,12 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         return 1;
 
     int fd = establish_UDP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "LIN " + args[1] + " " + args[2] + "\n";
@@ -89,12 +95,24 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     if (send_UDP_message(fd, message, res) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_UDP_message(fd, addr);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto login_result = split(server_response.msg);
@@ -152,34 +170,50 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
 
     int fd = establish_TCP_connection(ip, port, res);
 
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
+
     string message;
     message = "CPS " + activeUser.userId + " " + args[1] + " " + args[2] + "\n";
 
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
-    } 
-    else 
-    {
-        ServerResponse server_response = receive_TCP_message(fd);
-        if (server_response.status == -1)
+        if (res != nullptr) 
         {
-            cerr << "Error receiving response from server." << endl;
-            return 1;
+            freeaddrinfo(res);
+            res = nullptr;
         }
-        auto changePass_result = split(server_response.msg);
+        freeaddrinfo(res);
+        close(fd);
+        return 1;
+    }
+    ServerResponse server_response = receive_TCP_message(fd);
+    if (server_response.status == -1)
+    {
+        cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
+        return 1;
+    }
+    auto changePass_result = split(server_response.msg);
 
-        if (changePass_result[1] == "NLG")
-            cout << "No user is logged in" << endl;
-        else if (changePass_result[1] == "NOK")         // FIX ME verificar se é mesmo NOK
-            cout << "Password is not correct" << endl;
-        else if (changePass_result[1] == "NID")
-            cout << "User doesn't exist" << endl;
-        else if (changePass_result[1] == "OK")
-            {
-                cout << "Password changed successfully" << endl;
-                activeUser.password = args[2];
-            }
+    if (changePass_result[1] == "NLG")
+        cout << "No user is logged in" << endl;
+    else if (changePass_result[1] == "NOK")
+        cout << "Password is not correct" << endl;
+    else if (changePass_result[1] == "NID")
+        cout << "User doesn't exist" << endl;
+    else if (changePass_result[1] == "OK")
+    {
+        cout << "Password changed successfully" << endl;
+        activeUser.password = args[2];
     }
     
     freeaddrinfo(res);
@@ -209,6 +243,12 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         return 1;
 
     int fd = establish_UDP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "UNR " + activeUser.userId + " " + activeUser.password + "\n";
@@ -216,12 +256,24 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     if (send_UDP_message(fd, message, res) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_UDP_message(fd, addr);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto unregister_result = split(server_response.msg);
@@ -266,6 +318,12 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         return 1;
 
     int fd = establish_UDP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "LOU " + activeUser.userId + " " + activeUser.password + "\n";
@@ -273,12 +331,24 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     if (send_UDP_message(fd, message, res) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_UDP_message(fd, addr);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto logout_result = split(server_response.msg);
@@ -411,30 +481,47 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
 
     int fd = establish_TCP_connection(ip, port, res);
 
-    if (send_TCP_message(fd, fullMessage) == -1) 
+    if (fd == -1)
     {
-        cout << "Error sending create request." << endl;
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
     }
-    else
+
+    if (send_TCP_message(fd, fullMessage) == -1)
     {
+        cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
+        return 1;
+    }
     ServerResponse server_response = receive_TCP_message(fd);
     cout << "Server response: " << server_response.msg << endl;
     if (server_response.status == -1)
-        {
-            cerr << "Error receiving response from server." << endl;
-            return 1;
+    {
+        cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
         }
-        auto create_result = split(server_response.msg);
-
-        if (create_result[1] == "NOK")
-            cout << "Event couldn't be created" << endl;
-        else if (create_result[1] == "NLG")
-            cout << "No user is logged in" << endl;
-        else if (create_result[1] == "WRP")
-            cout << "Password is not correct" << endl;
-        else if (create_result[1] == "OK")
-            cout << "Event created successfully. Event ID: " << create_result[2] << endl;
+        close(fd);
+        return 1;
     }
+    auto create_result = split(server_response.msg);
+
+    if (create_result[1] == "NOK")
+        cout << "Event couldn't be created" << endl;
+    else if (create_result[1] == "NLG")
+        cout << "No user is logged in" << endl;
+    else if (create_result[1] == "WRP")
+        cout << "Password is not correct" << endl;
+    else if (create_result[1] == "OK")
+        cout << "Event created successfully. Event ID: " << create_result[2] << endl;
+    
     
     freeaddrinfo(res);
     close(fd);
@@ -463,6 +550,12 @@ int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string
         return 1;
 
     int fd = establish_TCP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "CLS " + activeUser.userId + " " + activeUser.password + " " + args[1] + "\n";
@@ -470,12 +563,24 @@ int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_TCP_message(fd);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto close_result = split(server_response.msg);
@@ -525,6 +630,12 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
         return 1;
 
     int fd = establish_UDP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "LME " + activeUser.userId + " " + activeUser.password + "\n";
@@ -532,12 +643,24 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
     if (send_UDP_message(fd, message, res) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_UDP_message(fd, addr);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto myevents_result = split(server_response.msg);
@@ -585,6 +708,12 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
         return 1;
 
     int fd = establish_TCP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "LST\n";
@@ -592,12 +721,24 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_TCP_message(fd);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto list_result = split(server_response.msg);
@@ -652,18 +793,36 @@ int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
 
     int fd = establish_TCP_connection(ip, port, res);
 
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
+
     string message;
     message = "SED " + args[1] + "\n";
 
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_TCP_message(fd);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto show_result = split(server_response.msg);
@@ -771,18 +930,36 @@ int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, stri
 
     int fd = establish_TCP_connection(ip, port, res);
 
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
+
     string message;
     message = "RID " + activeUser.userId + " " + activeUser.password + " " + args[1] + " " + args[2] + "\n";
 
     if (send_TCP_message(fd, message) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_TCP_message(fd);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto show_result = split(server_response.msg);
@@ -830,6 +1007,12 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
         return 1;
 
     int fd = establish_UDP_connection(ip, port, res);
+
+    if (fd == -1)
+    {
+        cerr << "Error establishing TCP connection." << endl;
+        return 1;
+    }
     
     string message;
     message = "LMR " + activeUser.userId + " " + activeUser.password + "\n";
@@ -837,12 +1020,24 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
     if (send_UDP_message(fd, message, res) == -1)
     {
         cerr << "Error sending message to server." << endl;
+        if (res != nullptr) 
+        {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        freeaddrinfo(res);
+        close(fd);
         return 1;
     }
     ServerResponse server_response = receive_UDP_message(fd, addr);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+        close(fd);
         return 1;
     }
     auto myreservations_result = split(server_response.msg);
