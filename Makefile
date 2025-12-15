@@ -1,31 +1,37 @@
 # Compiler and Flags
 CXX = g++
-# Adicionei -I. (raiz) e -IUserApp para o compilador encontrar os .hpp
-CXXFLAGS = -Wall -Wextra -std=c++17 -g -I. -IUserApp
 
-# Directories
-USER_DIR = UserApp
-ES_DIR = ESDIR
+# Directories (Caminhos para as pastas)
+COMMON_DIR = common
+SRC_DIR = src
+USER_DIR = $(SRC_DIR)/UserApp
+ES_DIR = $(SRC_DIR)/ESDIR
+
+# Include Flags:
+# -I.             : Procura na raiz
+# -I$(COMMON_DIR) : Procura em 'common' (para common.hpp e protocols.hpp)
+# -I$(USER_DIR)   : Procura em 'src/UserApp' (para utils.hpp)
+CXXFLAGS = -Wall -Wextra -std=c++17 -g -I. -I$(COMMON_DIR) -I$(USER_DIR)
 
 # Targets
 all: user ES
 
 # ------------------- Shared Objects -------------------
-# protocols.o fica na raiz
-protocols.o: protocols.cpp protocols.hpp common.hpp
-	$(CXX) $(CXXFLAGS) -c protocols.cpp -o protocols.o
+# protocols.o agora vive dentro da pasta common
+$(COMMON_DIR)/protocols.o: $(COMMON_DIR)/protocols.cpp $(COMMON_DIR)/protocols.hpp $(COMMON_DIR)/common.hpp
+	$(CXX) $(CXXFLAGS) -c $(COMMON_DIR)/protocols.cpp -o $(COMMON_DIR)/protocols.o
 
 # ------------------- User Application -------------------
-# O executável 'user' fica na raiz para ser fácil de correr
-user: $(USER_DIR)/user.o protocols.o $(USER_DIR)/utils.o
-	$(CXX) $(CXXFLAGS) -o user $(USER_DIR)/user.o protocols.o $(USER_DIR)/utils.o
+# O executável 'user' fica na raiz
+user: $(USER_DIR)/user.o $(COMMON_DIR)/protocols.o $(USER_DIR)/utils.o
+	$(CXX) $(CXXFLAGS) -o user $(USER_DIR)/user.o $(COMMON_DIR)/protocols.o $(USER_DIR)/utils.o
 
-# Compilar user.cpp (que está dentro de UserApp)
-$(USER_DIR)/user.o: $(USER_DIR)/user.cpp common.hpp protocols.hpp $(USER_DIR)/utils.hpp
+# Compilar user.cpp
+$(USER_DIR)/user.o: $(USER_DIR)/user.cpp $(COMMON_DIR)/common.hpp $(COMMON_DIR)/protocols.hpp $(USER_DIR)/utils.hpp
 	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/user.cpp -o $(USER_DIR)/user.o
 
-# Compilar utils.cpp (que está dentro de UserApp)
-$(USER_DIR)/utils.o: $(USER_DIR)/utils.cpp $(USER_DIR)/utils.hpp protocols.hpp common.hpp
+# Compilar utils.cpp
+$(USER_DIR)/utils.o: $(USER_DIR)/utils.cpp $(USER_DIR)/utils.hpp $(COMMON_DIR)/protocols.hpp $(COMMON_DIR)/common.hpp
 	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/utils.cpp -o $(USER_DIR)/utils.o
 
 # ------------------- Server Application (ES) -------------------
@@ -33,22 +39,22 @@ $(USER_DIR)/utils.o: $(USER_DIR)/utils.cpp $(USER_DIR)/utils.hpp protocols.hpp c
 ES: $(ES_DIR)/ES.o
 	$(CXX) $(CXXFLAGS) -o ES $(ES_DIR)/ES.o
 
-# Compilar ES.cpp (que está dentro de ESDIR)
-$(ES_DIR)/ES.o: $(ES_DIR)/ES.cpp common.hpp
+# Compilar ES.cpp
+$(ES_DIR)/ES.o: $(ES_DIR)/ES.cpp $(COMMON_DIR)/common.hpp
 	$(CXX) $(CXXFLAGS) -c $(ES_DIR)/ES.cpp -o $(ES_DIR)/ES.o
 
 # ------------------- Clean -------------------
-# Limpa os .o dentro das pastas também
+# Limpa os .o em todas as sub-pastas
 clean:
-	rm -f *.o $(USER_DIR)/*.o $(ES_DIR)/*.o user ES
+	rm -f *.o $(USER_DIR)/*.o $(ES_DIR)/*.o $(COMMON_DIR)/*.o user ES
 
 # ------------------- Run Targets -------------------
 
-# Truque: Entra na pasta ESDIR e corre o executável que está na raiz (../ES)
-# Isto garante que os ficheiros criados ficam dentro de ESDIR!
+# Truque: Entra na pasta src/ESDIR e corre o executável que está na raiz
+# Nota: Como ESDIR está dentro de src, precisamos de recuar 2 vezes (../../ES)
 run_server: ES
-	@echo "Running Server inside ESDIR..."
-	cd $(ES_DIR) && ../ES
+	@echo "Running Server inside $(ES_DIR)..."
+	cd $(ES_DIR) && ../../ES
 
 run_user: user
 	./user

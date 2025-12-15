@@ -104,7 +104,7 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_UDP_message(fd, addr);
+    ServerResponse server_response = receive_UDP_message(fd, addr, LOGIN_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -191,7 +191,7 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, CHANGEPASS_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -265,7 +265,7 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_UDP_message(fd, addr);
+    ServerResponse server_response = receive_UDP_message(fd, addr, UNREGISTER_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -340,7 +340,7 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_UDP_message(fd, addr);
+    ServerResponse server_response = receive_UDP_message(fd, addr, LOGOUT_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -499,7 +499,7 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, CREATE_RESPONSE);
     cout << "Server response: " << server_response.msg << endl;
     if (server_response.status == -1)
     {
@@ -572,7 +572,7 @@ int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, CLOSE_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -652,7 +652,7 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_UDP_message(fd, addr);
+    ServerResponse server_response = receive_UDP_message(fd, addr, MYEVENTS_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -730,7 +730,7 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, LIST_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -814,7 +814,7 @@ int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, SHOW_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -951,7 +951,7 @@ int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, stri
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_TCP_message(fd);
+    ServerResponse server_response = receive_TCP_message(fd, RESERVE_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -1029,7 +1029,7 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
         close(fd);
         return 1;
     }
-    ServerResponse server_response = receive_UDP_message(fd, addr);
+    ServerResponse server_response = receive_UDP_message(fd, addr, MYRESERVATIONS_RESPONSE);
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;

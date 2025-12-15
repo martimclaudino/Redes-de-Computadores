@@ -58,11 +58,11 @@ int send_UDP_message(int fd, const string &message, struct addrinfo* &res)
     return n;
 }
 
-ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr)
+ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr, int size)
 {
     ServerResponse server_response;
     socklen_t addrlen = sizeof(addr);
-    char buffer[128];                                                    // FIX ME buffer size
+    char buffer[size];
 
     int n = recvfrom(fd, buffer, sizeof(buffer), 0,
                  (struct sockaddr *)&addr, &addrlen);
@@ -136,11 +136,11 @@ ssize_t send_TCP_message(int fd, const string &message)
     return n;
 }
 
-ServerResponse receive_TCP_message(int fd)
+ServerResponse receive_TCP_message(int fd, int size)
 {
     ServerResponse server_response;
     string result;
-    char buffer[10000]; // FIX ME buffer size for each function
+    char buffer[size];
     ssize_t n;
     
     while (true)
@@ -162,8 +162,7 @@ ServerResponse receive_TCP_message(int fd)
             break;  // end of message
     }
     
-    string msg(buffer,n);
-    server_response.msg = msg;
+    server_response.msg = result;
     return server_response;
 }
 

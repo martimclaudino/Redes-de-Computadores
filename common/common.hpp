@@ -11,6 +11,18 @@ using namespace std;
 #define PORT "58000"
 #define IPADDRESS "tejo.tecnico.ulisboa.pt"     // "MartimClaudino"       // Change into the lt5 address    
 
+#define LOGIN_RESPONSE 7
+#define CHANGEPASS_RESPONSE 7
+#define UNREGISTER_RESPONSE 7
+#define LOGOUT_RESPONSE 7
+#define CREATE_RESPONSE 9
+#define CLOSE_RESPONSE 7
+#define MYEVENTS_RESPONSE 5007 // 7 + 1000 max events per user * 5 characters per event
+#define LIST_RESPONSE 1000000 //3308 // 8 + 1000 max events * 3 characters per event + 4 spaces per event
+#define SHOW_RESPONSE 100000
+#define RESERVE_RESPONSE 11
+#define MYRESERVATIONS_RESPONSE 32
+
 typedef enum
 {
     CMD_INVALID = -1,
