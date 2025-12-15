@@ -1,6 +1,3 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
-
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -18,6 +15,14 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+#include "common.hpp"
+#include "protocols.hpp"
+
 using namespace std;
 
-#endif
+// Handler for Zombie processes 
+void handle_sigchld(int sig);
+
+int setup_UDP_server(string port);
+
+int setup_TCP_server(string port);

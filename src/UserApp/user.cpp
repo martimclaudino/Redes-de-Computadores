@@ -60,96 +60,70 @@ int main(int argc, char *argv[])
 
         CommandType cmd = parse_command(args[0]);
 
-        switch (cmd)
+        switch (cmd)    // FIX ME dont need {}
         {
             case CMD_LOGIN: {
-
                 login(args, activeUser, ip, port, res, addr);
-
                 break;
             }
 
             case CMD_CHANGEPASS: {
-
                 changePass(args, activeUser, ip, port, res);
-
                 break;
             }
 
             case CMD_UNREGISTER: {
-
                 unregister(args, activeUser, ip, port, res, addr);
-
                 break;
             }
 
             case CMD_LOGOUT: {
-
                 logout(args, activeUser, ip, port, res, addr);
-
                 break;
             }
 
             case CMD_EXIT: {
-                
                 exit(args, activeUser);
-                
                 break;
             }
 
             case CMD_CREATE: {
-
                 create(args, activeUser, ip, port, res);
-                
                 break;
             }
 
             case CMD_CLOSE: {
-                
                 close(args, activeUser, ip, port, res);
-
                 break;
             }
 
             case CMD_MYEVENTS: {
-                
                 myevents(args, activeUser, ip, port, res, addr);
-
                 break;
             }
             
             case CMD_LIST: {
-
                 list(args, activeUser, ip, port, res);
-
                 break;
             }
 
             case CMD_SHOW: {
-
                 show(args, activeUser, ip, port, res);
-                
                 break;
             }
 
             case CMD_RESERVE: {
-                
                 reserve(args, activeUser, ip, port, res);
-
                 break;
             }
 
             case CMD_MYRESERVATIONS: {
-                
                 myreservations(args, activeUser, ip, port, res, addr);
-                
                 break;
             }
 
             case CMD_INVALID: {
-
                 cout << "Invalid command." << endl;
-
                 break;
             }
 

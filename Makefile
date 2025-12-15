@@ -35,13 +35,17 @@ $(USER_DIR)/utils.o: $(USER_DIR)/utils.cpp $(USER_DIR)/utils.hpp $(COMMON_DIR)/p
 	$(CXX) $(CXXFLAGS) -c $(USER_DIR)/utils.cpp -o $(USER_DIR)/utils.o
 
 # ------------------- Server Application (ES) -------------------
-# O executável 'ES' fica na raiz
-ES: $(ES_DIR)/ES.o
-	$(CXX) $(CXXFLAGS) -o ES $(ES_DIR)/ES.o
+# 1. O executável precisa de ES.o E utils.o
+ES: $(ES_DIR)/ES.o $(ES_DIR)/utils.o
+	$(CXX) $(CXXFLAGS) -o ES $(ES_DIR)/ES.o $(ES_DIR)/utils.o
 
-# Compilar ES.cpp
-$(ES_DIR)/ES.o: $(ES_DIR)/ES.cpp $(COMMON_DIR)/common.hpp
+# 2. Compilar ES.cpp 
+$(ES_DIR)/ES.o: $(ES_DIR)/ES.cpp $(COMMON_DIR)/common.hpp $(ES_DIR)/utils.hpp
 	$(CXX) $(CXXFLAGS) -c $(ES_DIR)/ES.cpp -o $(ES_DIR)/ES.o
+
+# 3. Compilar utils.cpp do servidor
+$(ES_DIR)/utils.o: $(ES_DIR)/utils.cpp $(ES_DIR)/utils.hpp $(COMMON_DIR)/common.hpp
+	$(CXX) $(CXXFLAGS) -c $(ES_DIR)/utils.cpp -o $(ES_DIR)/utils.o
 
 # ------------------- Clean -------------------
 # Limpa os .o em todas as sub-pastas
