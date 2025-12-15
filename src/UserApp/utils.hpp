@@ -46,7 +46,7 @@ int exit(const vector<string> &args, ActiveUser &activeUser);
 
 bool verify_create(const vector<string> &args);
 
-int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_close(const vector<string> &args);
 
@@ -58,15 +58,15 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
 
 bool verify_list(const vector<string> &args);
 
-int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_show(const vector<string> &args);
 
-int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_reserve(const vector<string> &args);
 
-int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
+int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_myreservations(const vector<string> &args);
 

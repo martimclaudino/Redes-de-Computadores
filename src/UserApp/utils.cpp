@@ -432,7 +432,7 @@ bool verify_create(const vector<string> &args)
     return true;
 }
 
-int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+int create(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
 {
     if (!activeUser.loggedIn)
     {
@@ -673,7 +673,7 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
     {
         cout << "Your events: " << endl;
         int i = 2;
-        while (i < myevents_result.size() - 1)
+        while (i < int(myevents_result.size()) - 1)
         {
             cout << myevents_result[i] << " " << myevents_result[i+1] << endl;
             i +=2;
@@ -697,7 +697,7 @@ bool verify_list(const vector<string> &args)
     return true;
 }
 
-int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
 {
     if (!activeUser.loggedIn)
     {
@@ -749,7 +749,7 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
     {
         cout << "Available events: " << endl;
         int i = 2;
-        while (i < list_result.size() - 1)
+        while (i < int(list_result.size()) - 1)
         {
             cout << list_result[i] << " " << list_result[i+1] << " " << list_result[i+2] << " " << list_result[i+3] << " " << list_result[i+4] << endl;
             i +=5;
@@ -781,7 +781,7 @@ bool verify_show(const vector<string> &args)
     return true;
 }
 
-int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
 {
     if (!activeUser.loggedIn)
     {
@@ -918,7 +918,7 @@ bool verify_reserve(const vector<string> &args)
     return true;
 }
 
-int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
+int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
 {
     if (!activeUser.loggedIn)
     {
@@ -1050,7 +1050,7 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
     {
         cout << "Your reservations: " << endl;
         int i = 2;
-        while (i < myreservations_result.size() - 1)
+        while (i < int(myreservations_result.size()) - 1)
         {
             cout << myreservations_result[i] << " " << myreservations_result[i+1] << " " << myreservations_result[i+2] << " " << myreservations_result[i+3] << endl;
             i +=4;

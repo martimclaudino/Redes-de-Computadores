@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 
             case CMD_CREATE: {
 
-                create(args, activeUser, ip, port, res, addr);
+                create(args, activeUser, ip, port, res);
                 
                 break;
             }
@@ -120,21 +120,21 @@ int main(int argc, char *argv[])
             
             case CMD_LIST: {
 
-                list(args, activeUser, ip, port, res, addr);
+                list(args, activeUser, ip, port, res);
 
                 break;
             }
 
             case CMD_SHOW: {
 
-                show(args, activeUser, ip, port, res, addr);
+                show(args, activeUser, ip, port, res);
                 
                 break;
             }
 
             case CMD_RESERVE: {
                 
-                reserve(args, activeUser, ip, port, res, addr);
+                reserve(args, activeUser, ip, port, res);
 
                 break;
             }
@@ -145,6 +145,14 @@ int main(int argc, char *argv[])
                 
                 break;
             }
+
+            case CMD_INVALID: {
+
+                cout << "Invalid command." << endl;
+
+                break;
+            }
+
         }
     }
 
