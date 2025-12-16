@@ -24,8 +24,6 @@ CommandType parse_command(const string &cmd);
 
 vector<string> split(const string &line);
 
-bool verify_login(const vector<string> &args);
-
 int login (const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
 bool verify_changePass(const vector<string> &args);

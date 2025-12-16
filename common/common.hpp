@@ -55,4 +55,6 @@ typedef struct
 
 vector<string> split(const string &line);
 
+ServerResponse verify_login(const vector<string> &args);
+
 #endif

@@ -40,24 +40,6 @@ CommandType parse_command(const string &cmd)
     return CMD_INVALID;
 }
 
-bool verify_login(const vector<string> &args)
-{
-    if (args.size() != 3)
-    {
-        cout << "Invalid number of arguments for login. Usage: login <username> <password>" << endl;
-        return false;
-    }
-    string username = args[1];
-    string password = args[2];
-
-    if (username.length() != 6 || password.length() != 8)
-    {
-        cout << "Username or password have the wrong size. Username length is 6 and password length is 8." << endl;
-        return false;
-    }
-    return true;
-}
-
 int login (const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
 {
     if (activeUser.loggedIn)
@@ -65,10 +47,13 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         cout << "You are already logged in. If you want to switch accounts please logout first." << endl;
         return 1;
     }
-
-    if (!verify_login(args))
+    ServerResponse login = verify_login(args);
+    if (login.status == -1)
+    {
+        cout << login.msg;
         return 1;
-
+    }
+        
     int fd = establish_UDP_connection(ip, port, res);
 
     if (fd == -1)

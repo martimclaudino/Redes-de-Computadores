@@ -166,29 +166,6 @@ int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t ad
     return n;
 }
 
-ServerResponse verify_login(const vector<string> &args) // FIX ME i could use this on common.cpp and in the UserApp
-{
-    ServerResponse response;
-    response.msg = "";
-    response.status = 1;
-    if (args.size() != 3)
-    {
-        response.msg = "Invalid number of arguments for login. Usage: login <username> <password>\n";
-        response.status = -1;
-        return response;
-    }
-    string username = args[1];
-    string password = args[2];
-
-    if (username.length() != 6 || password.length() != 8)
-    {
-        response.msg = "Username or password have the wrong size. Username length is 6 and password length is 8.\n";
-        response.status = -1;
-        return response;
-    }
-    return response;
-}
-
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
     ServerResponse response = verify_login(args);
@@ -200,6 +177,8 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
     string UID = args[1];
     string password = args[2];
     string userpath = "src/ESDIR/USERS/" + UID;
+    string pass_file = userpath + "/password.txt";
+    string login_file = userpath + "/login.txt";
     struct stat st;
 
     if (stat(userpath.c_str(), &st) == -1) 
@@ -212,11 +191,9 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
         }
         mkdir((userpath + "/CREATED").c_str(), 0700);
         mkdir((userpath + "/RESERVED").c_str(), 0700);
-        string pass_file = userpath + "/password.txt";
         ofstream p_file(pass_file);
         p_file << password;
         p_file.close();
-        string login_file = userpath + "/login.txt";
         ofstream l_file(login_file);
         l_file.close();
 
@@ -229,9 +206,52 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
         }
 
         return 0;
-    } else 
+    } 
+    if (stat(pass_file.c_str(), &st) == -1) 
     {
-        // Diretoria EXISTE -> Verificar password ou Re-registo
+        // User has unregistered, the directory exists but doesn't have password file
+        ofstream p_file(pass_file);
+        p_file << password;
+        p_file.close();
+        ofstream l_file(login_file);
+        l_file.close();
+
+        string msg = "RLI REG\n";
+    
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+
+        return 0;
     }
+    ifstream p_file(pass_file);
+    string stored_pass;
+    p_file >> stored_pass;
+    p_file.close();
+
+    if (stored_pass == password) 
+    {
+        ofstream l_file(login_file);
+        l_file.close();
+
+        string msg = "RLI OK\n";
+
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+        return 0;
+    } 
+    string msg = "RLI NOK\n";
+
+    if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+    {
+        cerr << "Error sending reply to client." << endl;
+        return 1;
+    }
+    
     return 0;
 }
