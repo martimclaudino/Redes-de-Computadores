@@ -14,12 +14,16 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <fstream>
+#include <filesystem>
 
 #include "common.hpp"
 #include "protocols.hpp"
 #include "utils.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
 
 CommandType parse_command(const string &cmd)
 {
@@ -162,3 +166,72 @@ int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t ad
     return n;
 }
 
+ServerResponse verify_login(const vector<string> &args) // FIX ME i could use this on common.cpp and in the UserApp
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 3)
+    {
+        response.msg = "Invalid number of arguments for login. Usage: login <username> <password>\n";
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.msg = "Username or password have the wrong size. Username length is 6 and password length is 8.\n";
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse response = verify_login(args);
+    if (response.status == -1)
+    {
+        cout << response.msg;
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    string userpath = "src/ESDIR/USERS/" + UID;
+    struct stat st;
+
+    if (stat(userpath.c_str(), &st) == -1) 
+    {
+        // User has not been registered, needs to be registered
+        if (mkdir(userpath.c_str(), 0700) == -1)
+        {
+            perror("mkdir");
+            return 1;
+        }
+        mkdir((userpath + "/CREATED").c_str(), 0700);
+        mkdir((userpath + "/RESERVED").c_str(), 0700);
+        string pass_file = userpath + "/password.txt";
+        ofstream p_file(pass_file);
+        p_file << password;
+        p_file.close();
+        string login_file = userpath + "/login.txt";
+        ofstream l_file(login_file);
+        l_file.close();
+
+        string msg = "RLI REG\n";
+        
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+
+        return 0;
+    } else 
+    {
+        // Diretoria EXISTE -> Verificar password ou Re-registo
+    }
+    return 0;
+}

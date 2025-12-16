@@ -32,3 +32,7 @@ int setup_TCP_server(string port);
 ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen);
 
 int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_login(const vector<string> &args);
+
+int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
         timeout.tv_sec=10;
 
         // Blocking select (needs timout)
-        int out_fds = select(max_fd + 1, &testfds, NULL, NULL, &timeout);   // FIX ME  might need timout value
+        int out_fds = select(max_fd + 1, &testfds, NULL, NULL, /*&timeout*/NULL);   // FIX ME  timout value
 
         switch (out_fds)
         {
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
                     switch (cmd)
                     {
                         case CMD_LOGIN: 
-                            //login(args, activeUser, ip, port, res, addr);
+                            login(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_UNREGISTER: 

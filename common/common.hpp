@@ -9,7 +9,7 @@
 using namespace std;
 
 #define PORT "58000"
-#define IPADDRESS "tejo.tecnico.ulisboa.pt"     // "MartimClaudino"       // Change into the lt5 address    
+#define IPADDRESS "MartimClaudino"    // "tejo.tecnico.ulisboa.pt"        // Change into the lt5 address    
 
 #define LOGIN_RESPONSE 7
 #define CHANGEPASS_RESPONSE 7
