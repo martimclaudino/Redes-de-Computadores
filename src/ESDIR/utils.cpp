@@ -166,6 +166,26 @@ int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t ad
     return n;
 }
 
+int register_user(string UID, string password, string userpath, string pass_file, string login_file, struct stat &st)
+{
+    if (stat(userpath.c_str(), &st) == -1) 
+    {
+        if (mkdir(userpath.c_str(), 0700) == -1)
+        {
+            perror("mkdir");
+            return 1;
+        }
+        mkdir((userpath + "/CREATED").c_str(), 0700);
+        mkdir((userpath + "/RESERVED").c_str(), 0700);
+    }
+    ofstream p_file(pass_file);
+    p_file << password;
+    p_file.close();
+    ofstream l_file(login_file);
+    l_file.close();
+    return 0;
+}
+
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
     ServerResponse response = verify_login(args);
@@ -181,21 +201,10 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
     string login_file = userpath + "/login.txt";
     struct stat st;
 
-    if (stat(userpath.c_str(), &st) == -1) 
+    if ((stat(userpath.c_str(), &st) == -1) || stat(pass_file.c_str(), &st) == -1) 
     {
         // User has not been registered, needs to be registered
-        if (mkdir(userpath.c_str(), 0700) == -1)
-        {
-            perror("mkdir");
-            return 1;
-        }
-        mkdir((userpath + "/CREATED").c_str(), 0700);
-        mkdir((userpath + "/RESERVED").c_str(), 0700);
-        ofstream p_file(pass_file);
-        p_file << password;
-        p_file.close();
-        ofstream l_file(login_file);
-        l_file.close();
+        register_user(UID, password, userpath, pass_file, login_file, st);
 
         string msg = "RLI REG\n";
         
@@ -207,25 +216,7 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
 
         return 0;
     } 
-    if (stat(pass_file.c_str(), &st) == -1) 
-    {
-        // User has unregistered, the directory exists but doesn't have password file
-        ofstream p_file(pass_file);
-        p_file << password;
-        p_file.close();
-        ofstream l_file(login_file);
-        l_file.close();
-
-        string msg = "RLI REG\n";
-    
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
-
-        return 0;
-    }
+    // User is registered, verify password
     ifstream p_file(pass_file);
     string stored_pass;
     p_file >> stored_pass;
@@ -252,6 +243,6 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
         cerr << "Error sending reply to client." << endl;
         return 1;
     }
-    
+
     return 0;
 }

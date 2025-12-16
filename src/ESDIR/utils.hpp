@@ -33,4 +33,6 @@ ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &
 
 int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen);
 
+int register_user(string UID, string password, string userpath, string pass_file, string login_file, struct stat &st);
+
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
