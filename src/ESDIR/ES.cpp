@@ -110,16 +110,43 @@ int main(int argc, char *argv[]) {
                 {
                     struct sockaddr_in client_addr;
                     socklen_t addr_len = sizeof(client_addr);
-                    char buffer[1024];
-
-                    ssize_t n = recvfrom(udp_fd, buffer, sizeof(buffer)-1, 0, (struct sockaddr*)&client_addr, &addr_len);
-                    if (n > 0) 
+                    
+                    ServerResponse client_request = receive_UDP_request(udp_fd, client_addr, addr_len);
+                    if (client_request.status == -1)
                     {
-                        buffer[n] = '\0';
-                        cout << "UDP Received: " << buffer << endl;
-                        
-                        // process_udp_request(buffer, client_addr); 
-                        // A função process deve fazer o sendto para responder
+                        cerr << "Error receiving request from client." << endl;
+                        continue;
+                    }
+                    
+                    auto args = split(client_request.msg);
+
+                    CommandType cmd = parse_command(args[0]);
+
+                    switch (cmd)
+                    {
+                        case CMD_LOGIN: 
+                            //login(args, activeUser, ip, port, res, addr);
+                            break;
+
+                        case CMD_UNREGISTER: 
+                            //unregister(args, activeUser, ip, port, res, addr);
+                            break;
+
+                        case CMD_LOGOUT: 
+                            //logout(args, activeUser, ip, port, res, addr);
+                            break;
+
+                        case CMD_MYEVENTS: 
+                            //myevents(args, activeUser, ip, port, res, addr);
+                            break;
+
+                        case CMD_MYRESERVATIONS: 
+                            //myreservations(args, activeUser, ip, port, res, addr);
+                            break;
+
+                        case CMD_INVALID: 
+                            cout << "Invalid command." << endl;
+                            break;
                     }
                 }
 

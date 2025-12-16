@@ -18,7 +18,7 @@
 
 using namespace std;
 
-int establish_UDP_connection(string &ip, string &port, struct addrinfo* &res)
+int establish_UDP_connection(string &ip, string &port, struct addrinfo* &res)   // FIX ME the udp sending and receiving message functions are olny for the client, so should be on the UserApp files
 {
     struct addrinfo hints;
 
@@ -69,7 +69,7 @@ ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr, int size)
     
     server_response.status = n;
     
-    if (n == -1) /*error*/
+    if (n == -1)
     {
         exit(1);
         return server_response;

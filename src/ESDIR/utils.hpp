@@ -20,9 +20,15 @@
 
 using namespace std;
 
+CommandType parse_command(const string &cmd);
+
 // Handler for Zombie processes 
 void handle_sigchld(int sig);
 
 int setup_UDP_server(string port);
 
 int setup_TCP_server(string port);
+
+ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen);
+
+int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen);

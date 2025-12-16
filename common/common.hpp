@@ -53,4 +53,6 @@ typedef struct
     string msg;
 } ServerResponse;
 
+vector<string> split(const string &line);
+
 #endif

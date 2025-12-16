@@ -40,18 +40,6 @@ CommandType parse_command(const string &cmd)
     return CMD_INVALID;
 }
 
-vector<string> split(const string &line)
-{
-    istringstream iss(line);
-    vector<string> tokens;
-    string word;
-
-    while (iss >> word)
-        tokens.push_back(word);
-
-    return tokens;
-}
-
 bool verify_login(const vector<string> &args)
 {
     if (args.size() != 3)

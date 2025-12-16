@@ -21,6 +21,22 @@
 
 using namespace std;
 
+CommandType parse_command(const string &cmd)
+{
+    if (cmd == "LIN") return CMD_LOGIN;
+    if (cmd == "CPS") return CMD_CHANGEPASS;
+    if (cmd == "UNR") return CMD_UNREGISTER;
+    if (cmd == "LOU") return CMD_LOGOUT;
+    if (cmd == "CRE") return CMD_CREATE;
+    if (cmd == "CLS") return CMD_CLOSE;
+    if (cmd == "LME") return CMD_MYEVENTS;
+    if (cmd == "LST") return CMD_LIST;
+    if (cmd == "SED") return CMD_SHOW;
+    if (cmd == "RID") return CMD_RESERVE;
+    if (cmd == "LMR") return CMD_MYRESERVATIONS;
+    return CMD_INVALID;
+}
+
 void handle_sigchld(int sig) 
 {
     (void)sig; // Silence unused warning
@@ -113,3 +129,36 @@ int setup_TCP_server(string port)
     freeaddrinfo(res);
     return fd;
 }
+
+ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen)
+{
+    ServerResponse server_response;
+    char buffer[MYEVENTS_RESPONSE];     // biggest size in UDP messages
+    
+    ssize_t n = recvfrom(fd, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&addr, &addrlen);
+
+    server_response.status = n;
+    
+    if (n == -1) 
+    {
+        perror("recvfrom");
+        return server_response;
+    }
+    string msg(buffer,n);
+    server_response.msg = msg;
+    return server_response;
+}
+
+int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ssize_t n = sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr*)&addr, addrlen);
+    
+    if (n == -1)
+    {
+        perror("sendto");
+        exit(EXIT_FAILURE);
+        return n;
+    }
+    return n;
+}
+
