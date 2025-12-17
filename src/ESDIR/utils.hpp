@@ -22,6 +22,8 @@ using namespace std;
 
 CommandType parse_command(const string &cmd);
 
+void verbose_mode(string client_ip, int client_port, string command);
+
 // Handler for Zombie processes 
 void handle_sigchld(int sig);
 
@@ -54,10 +56,14 @@ bool is_loggedin(string login_file);
 // Returns true if the user registered
 bool is_registered(string user_path, string pass_file);
 
-ServerResponse verify_login(const vector<string> &args);
+int delete_file(const string file_path);
+
+ServerResponse verify_login_logout(const vector<string> &args);
 
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
 
 ServerResponse verify_unregister(const vector<string> &args);
 
 int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

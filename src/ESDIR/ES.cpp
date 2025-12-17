@@ -138,27 +138,18 @@ int main(int argc, char *argv[]) {
                     switch (cmd)
                     {
                         case CMD_LOGIN: 
-                            if (verbose) 
-                            {
-                                cout << "-----------------------------" << endl;
-                                cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
-                                    << "|Command: " << client_request.msg; 
-                            }
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
                             login(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_UNREGISTER: 
-                            if (verbose) 
-                            {
-                                cout << "-----------------------------" << endl;
-                                cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
-                                    << "|Command: " << client_request.msg; 
-                            }
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
                             unregister(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_LOGOUT: 
-                            //logout(args, activeUser, ip, port, res, addr);
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            logout(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_MYEVENTS: 

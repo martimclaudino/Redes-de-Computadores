@@ -41,6 +41,13 @@ CommandType parse_command(const string &cmd)
     return CMD_INVALID;
 }
 
+void verbose_mode(string client_ip, int client_port, string command)
+{
+    cout << "-----------------------------" << endl;
+    cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
+         << "|Command: " << command; 
+}
+
 void handle_sigchld(int sig) 
 {
     (void)sig; // Silence unused warning
@@ -206,7 +213,16 @@ bool is_registered(string user_path, string pass_file)
     return ((stat(user_path.c_str(), &st) == 0) && (stat(pass_file.c_str(), &st) == 0));
 }
 
-ServerResponse verify_login(const vector<string> &args)
+int delete_file(const string file_path)
+{
+    if (unlink(file_path.c_str()) != 0) {
+        perror("Failed to delete file");
+        return -1;
+    }
+    return 0;
+}
+
+ServerResponse verify_login_logout(const vector<string> &args)
 {
     ServerResponse response;
     response.msg = "";
@@ -229,7 +245,7 @@ ServerResponse verify_login(const vector<string> &args)
 
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
-    ServerResponse login = verify_login(args);
+    ServerResponse login = verify_login_logout(args);
     if (login.status == -1)
     {
         string msg = "RLI ERR\n";
@@ -325,15 +341,52 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    if (unlink(login_file.c_str()) != 0) {
-        perror("Erro ao apagar login file");
-        return 1;
-    }
-    if (unlink(pass_file.c_str()) != 0) {
-        perror("Erro ao apagar pass file");
-        return 1;
-    }
+    delete_file(login_file.c_str());
+    delete_file(pass_file.c_str());
+
     string msg = "RUR OK\n";
     send_UDP_reply(fd, msg, addr, addrlen);
+    return 0;
+}
+
+int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse logout = verify_login_logout(args);
+    if (logout.status == -1)
+    {
+        string msg = "RLI ERR\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
+    string login_file = user_path + "/login.txt";
+    struct stat st;
+
+    if (!is_loggedin(login_file)) 
+    {
+        string msg = "RLI NOK\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    if (!is_registered(user_path, pass_file)) 
+    {
+        string msg = "RLI UNR\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    } 
+    if (compare_passwords(pass_file, password)) 
+    {
+        delete_file(login_file.c_str());
+        string msg = "RLI OK\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    } 
+    string msg = "RLI WRP\n";
+
+    send_UDP_reply(fd, msg, addr, addrlen);
+
     return 0;
 }
