@@ -24,13 +24,15 @@ CommandType parse_command(const string &cmd);
 
 vector<string> split(const string &line);
 
+ServerResponse verify_login(const vector<string> &args);
+
 int login (const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 
 bool verify_changePass(const vector<string> &args);
 
 int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
 
-bool verify_unregister(const vector<string> &args);
+ServerResponse verify_unregister(const vector<string> &args);
 
 int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr);
 

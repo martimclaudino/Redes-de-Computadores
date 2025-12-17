@@ -166,17 +166,17 @@ int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t ad
     return n;
 }
 
-int register_user(string UID, string password, string userpath, string pass_file, string login_file, struct stat &st)
+int register_user(string UID, string password, string user_path, string pass_file, string login_file, struct stat &st)
 {
-    if (stat(userpath.c_str(), &st) == -1) 
+    if (stat(user_path.c_str(), &st) == -1) 
     {
-        if (mkdir(userpath.c_str(), 0700) == -1)
+        if (mkdir(user_path.c_str(), 0700) == -1)
         {
             perror("mkdir");
             return 1;
         }
-        mkdir((userpath + "/CREATED").c_str(), 0700);
-        mkdir((userpath + "/RESERVED").c_str(), 0700);
+        mkdir((user_path + "/CREATED").c_str(), 0700);
+        mkdir((user_path + "/RESERVED").c_str(), 0700);
     }
     ofstream p_file(pass_file);
     p_file << password;
@@ -186,25 +186,72 @@ int register_user(string UID, string password, string userpath, string pass_file
     return 0;
 }
 
+bool compare_passwords(string pass_file, string input_pass)
+{
+    ifstream p_file(pass_file);
+    string stored_pass;
+    p_file >> stored_pass;
+    p_file.close();
+    return stored_pass == input_pass;
+}
+
+bool is_loggedin(string login_file)
+{
+    struct stat st;
+    return (stat(login_file.c_str(), &st) != -1);
+}
+
+bool is_registered(string user_path, string pass_file)
+{
+    struct stat st;
+    return ((stat(user_path.c_str(), &st) == 0) && (stat(pass_file.c_str(), &st) == 0));
+}
+
+ServerResponse verify_login(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 3)
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
-    ServerResponse response = verify_login(args);
-    if (response.status == -1)
+    ServerResponse login = verify_login(args);
+    if (login.status == -1)
     {
-        cout << response.msg;
+        string msg = "RLI ERR\n";
+       if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
         return 1;
     }
     string UID = args[1];
     string password = args[2];
-    string userpath = "src/ESDIR/USERS/" + UID;
-    string pass_file = userpath + "/password.txt";
-    string login_file = userpath + "/login.txt";
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
+    string login_file = user_path + "/login.txt";
     struct stat st;
 
-    if ((stat(userpath.c_str(), &st) == -1) || stat(pass_file.c_str(), &st) == -1) 
+    if (!is_registered(user_path, pass_file)) 
     {
         // User has not been registered, needs to be registered
-        register_user(UID, password, userpath, pass_file, login_file, st);
+        register_user(UID, password, user_path, pass_file, login_file, st);
 
         string msg = "RLI REG\n";
         
@@ -217,12 +264,7 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
         return 0;
     } 
     // User is registered, verify password
-    ifstream p_file(pass_file);
-    string stored_pass;
-    p_file >> stored_pass;
-    p_file.close();
-
-    if (stored_pass == password) 
+    if (compare_passwords(pass_file, password)) 
     {
         ofstream l_file(login_file);
         l_file.close();
@@ -244,5 +286,92 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
         return 1;
     }
 
+    return 0;
+}
+
+ServerResponse verify_unregister(const vector<string> &args)
+{
+    ServerResponse response;
+    response.status = 1;
+    response.msg = "";
+    if (args.size() != 3)
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse unregister = verify_unregister(args);
+    if (unregister.status == -1)
+    {
+        string msg = "RUR ERR\n";
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
+    string login_file = user_path + "/login.txt";
+    if (!is_loggedin(login_file))
+    {
+        string msg = "RUR NOK\n";
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+        return 0;
+    }
+    if (!is_registered(user_path, pass_file))
+    {
+        string msg = "RUR UNR\n";
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+        return 0;
+    }
+    if (!compare_passwords(pass_file, password))
+    {
+        string msg = "RUR WRP\n";
+        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+        {
+            cerr << "Error sending reply to client." << endl;
+            return 1;
+        }
+        return 0;
+    }
+    if (unlink(login_file.c_str()) != 0) {
+        perror("Erro ao apagar login file");
+        return 1;
+    }
+    if (unlink(pass_file.c_str()) != 0) {
+        perror("Erro ao apagar pass file");
+        return 1;
+    }
+    string msg = "RUR OK\n";
+
+    if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
+    {
+        cerr << "Error sending reply to client." << endl;
+        return 1;
+    }
     return 0;
 }

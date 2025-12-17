@@ -40,6 +40,30 @@ CommandType parse_command(const string &cmd)
     return CMD_INVALID;
 }
 
+ServerResponse verify_login(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 3)
+    {
+        response.msg = "Invalid number of arguments for login. Usage: login <username> <password>\n";
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.msg = "Username or password have the wrong size. Username length is 6 and password length is 8.\n";
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+// FIX ME add the ERR case to each function
 int login (const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
 {
     if (activeUser.loggedIn)
@@ -195,14 +219,18 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     return 0;
 }
 
-bool verify_unregister(const vector<string> &args)
+ServerResponse verify_unregister(const vector<string> &args)
 {
+    ServerResponse response;
+    response.status = 1;
+    response.msg = "";
     if (args.size() != 1)
     {
-        cout << "Invalid number of arguments for unregister. Usage: unregister" << endl;
-        return false;
+        response.msg = "Invalid number of arguments for unregister. Usage: unregister\n";
+        response.status = -1;
+        return response;
     }
-    return true;
+    return response;
 }
 
 int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port,  struct addrinfo* &res, struct sockaddr_in &addr)
@@ -212,8 +240,12 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         cout << "You need to be logged in to unregister." << endl;
         return 1;
     }
-    if (!verify_unregister(args))
+    ServerResponse unregister = verify_unregister(args);
+    if (unregister.status == -1)
+    {
+        cout << unregister.msg;
         return 1;
+    }
 
     int fd = establish_UDP_connection(ip, port, res);
 

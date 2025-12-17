@@ -33,6 +33,29 @@ ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &
 
 int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen);
 
-int register_user(string UID, string password, string userpath, string pass_file, string login_file, struct stat &st);
+int register_user(string UID, string password, string user_path, string pass_file, string login_file, struct stat &st);
+
+// Arguments
+// -pass_file - path to password file
+// -input_pass - password to compare
+// Returns true if passwords match, false otherwise
+bool compare_passwords(string pass_file, string input_pass);
+
+// Arguments
+// -login_file - path to login file
+// Returns true if the user is logged in, false otherwise
+bool is_loggedin(string login_file);
+
+// Arguments
+// -user_path - path to user directory
+// -pass_file - path to password file
+// Returns true if the user registered
+bool is_registered(string user_path, string pass_file);
+
+ServerResponse verify_login(const vector<string> &args);
 
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_unregister(const vector<string> &args);
+
+int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

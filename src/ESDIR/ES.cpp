@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
                     socklen_t addr_len = sizeof(client_addr);
                     
                     ServerResponse client_request = receive_UDP_request(udp_fd, client_addr, addr_len);
+                    cout << "Received UDP request: " << client_request.msg << endl;
                     if (client_request.status == -1)
                     {
                         cerr << "Error receiving request from client." << endl;
@@ -129,7 +130,8 @@ int main(int argc, char *argv[]) {
                             break;
 
                         case CMD_UNREGISTER: 
-                            //unregister(args, activeUser, ip, port, res, addr);
+                            cout << "Unregister command received." << endl;
+                            unregister(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_LOGOUT: 
