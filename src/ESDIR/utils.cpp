@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <filesystem>
+#include <ctime>
 
 #include "common.hpp"
 #include "protocols.hpp"
@@ -172,8 +173,11 @@ int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, sockle
     return n;
 }
 
-int register_user(string UID, string password, string user_path, string pass_file, string login_file, struct stat &st)
+int register_user(string UID, string password, struct stat &st)
 {
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
+    string login_file = user_path + "/login.txt";
     if (stat(user_path.c_str(), &st) == -1) 
     {
         if (mkdir(user_path.c_str(), 0700) == -1)
@@ -187,13 +191,14 @@ int register_user(string UID, string password, string user_path, string pass_fil
     ofstream p_file(pass_file);
     p_file << password;
     p_file.close();
-    ofstream l_file(login_file);
-    l_file.close();
+    login_user(UID);
     return 0;
 }
 
-bool compare_passwords(string pass_file, string input_pass)
+bool compare_passwords(string UID, string input_pass)
 {
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
     ifstream p_file(pass_file);
     string stored_pass;
     p_file >> stored_pass;
@@ -201,14 +206,18 @@ bool compare_passwords(string pass_file, string input_pass)
     return stored_pass == input_pass;
 }
 
-bool is_loggedin(string login_file)
+bool is_loggedin(string UID)
 {
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string login_file = user_path + "/login.txt";
     struct stat st;
     return (stat(login_file.c_str(), &st) != -1);
 }
 
-bool is_registered(string user_path, string pass_file)
+bool is_registered(string UID)
 {
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
     struct stat st;
     return ((stat(user_path.c_str(), &st) == 0) && (stat(pass_file.c_str(), &st) == 0));
 }
@@ -222,7 +231,7 @@ int delete_file(const string file_path)
     return 0;
 }
 
-ServerResponse verify_login_logout(const vector<string> &args)
+ServerResponse verify_credentials(const vector<string> &args)
 {
     ServerResponse response;
     response.msg = "";
@@ -243,9 +252,24 @@ ServerResponse verify_login_logout(const vector<string> &args)
     return response;
 }
 
+void login_user(string UID)
+{
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string login_file = user_path + "/login.txt";
+    ofstream l_file(login_file);
+    l_file.close();
+}
+
+void logout_user(string UID)
+{
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string login_file = user_path + "/login.txt";
+    delete_file(login_file);
+}
+
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
-    ServerResponse login = verify_login_logout(args);
+    ServerResponse login = verify_credentials(args);
     if (login.status == -1)
     {
         string msg = "RLI ERR\n";
@@ -254,64 +278,32 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
     }
     string UID = args[1];
     string password = args[2];
-    string user_path = "src/ESDIR/USERS/" + UID;
-    string pass_file = user_path + "/password.txt";
-    string login_file = user_path + "/login.txt";
     struct stat st;
 
-    if (!is_registered(user_path, pass_file)) 
+    if (!is_registered(UID)) 
     {
         // User has not been registered, needs to be registered
-        register_user(UID, password, user_path, pass_file, login_file, st);
-
+        register_user(UID, password, st);
         string msg = "RLI REG\n";
-        
         send_UDP_reply(fd, msg, addr, addrlen);
-
         return 0;
     } 
     // User is registered, verify password
-    if (compare_passwords(pass_file, password)) 
+    if (compare_passwords(UID, password)) 
     {
-        ofstream l_file(login_file);
-        l_file.close();
-
+        login_user(UID);
         string msg = "RLI OK\n";
-
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
     string msg = "RLI NOK\n";
-
     send_UDP_reply(fd, msg, addr, addrlen);
-
     return 0;
-}
-
-ServerResponse verify_unregister(const vector<string> &args)
-{
-    ServerResponse response;
-    response.status = 1;
-    response.msg = "";
-    if (args.size() != 3)
-    {
-        response.status = -1;
-        return response;
-    }
-    string username = args[1];
-    string password = args[2];
-
-    if (username.length() != 6 || password.length() != 8)
-    {
-        response.status = -1;
-        return response;
-    }
-    return response;
 }
 
 int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
-    ServerResponse unregister = verify_unregister(args);
+    ServerResponse unregister = verify_credentials(args);
     if (unregister.status == -1)
     {
         string msg = "RUR ERR\n";
@@ -320,30 +312,28 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
     }
     string UID = args[1];
     string password = args[2];
-    string user_path = "src/ESDIR/USERS/" + UID;
-    string pass_file = user_path + "/password.txt";
-    string login_file = user_path + "/login.txt";
-    if (!is_loggedin(login_file))
+    if (!is_loggedin(UID))
     {
         string msg = "RUR NOK\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    if (!is_registered(user_path, pass_file))
+    if (!is_registered(UID))
     {
         string msg = "RUR UNR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    if (!compare_passwords(pass_file, password))
+    if (!compare_passwords(UID, password))
     {
         string msg = "RUR WRP\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    delete_file(login_file.c_str());
+    logout_user(UID);
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
     delete_file(pass_file.c_str());
-
     string msg = "RUR OK\n";
     send_UDP_reply(fd, msg, addr, addrlen);
     return 0;
@@ -351,7 +341,7 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
 
 int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
-    ServerResponse logout = verify_login_logout(args);
+    ServerResponse logout = verify_credentials(args);
     if (logout.status == -1)
     {
         string msg = "RLI ERR\n";
@@ -360,31 +350,143 @@ int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
     }
     string UID = args[1];
     string password = args[2];
-    string user_path = "src/ESDIR/USERS/" + UID;
-    string pass_file = user_path + "/password.txt";
-    string login_file = user_path + "/login.txt";
     struct stat st;
 
-    if (!is_loggedin(login_file)) 
+    if (!is_loggedin(UID)) 
     {
         string msg = "RLI NOK\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    if (!is_registered(user_path, pass_file)) 
+    if (!is_registered(UID)) 
     {
         string msg = "RLI UNR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
-    if (compare_passwords(pass_file, password)) 
+    if (compare_passwords(UID, password)) 
     {
-        delete_file(login_file.c_str());
+        logout_user(UID);
         string msg = "RLI OK\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
     string msg = "RLI WRP\n";
+
+    send_UDP_reply(fd, msg, addr, addrlen);
+
+    return 0;
+}
+
+string get_event_state(string EID)
+{
+    string event_path = "src/ESDIR/EVENTS/" + EID;
+    string start_file = event_path + "/start.txt";
+    struct stat st;
+    if (stat(start_file.c_str(), &st) == -1) 
+    {
+        return "";
+    }
+    string end_file = event_path + "/end.txt"; 
+    if (stat(end_file.c_str(), &st) == 0) 
+    {
+        return "3";
+    }
+    string event_data, attendees, date, hour;
+    ifstream e_file(start_file);
+    e_file >> event_data;
+    e_file.close();
+    auto args = split(event_data);
+    attendees = args[3];
+    date = args[4];
+    hour = args[5];
+
+    struct tm t = {0};
+    t.tm_mday = stoi(date.substr(0, 2));
+    t.tm_mon  = stoi(date.substr(3, 2)) - 1;
+    t.tm_year = stoi(date.substr(6, 4)) - 1900; // Number of years since 1900
+    t.tm_hour = stoi(hour.substr(0, 2));  
+    t.tm_min  = stoi(hour.substr(3, 2));
+
+    time_t event_time = mktime(&t);
+    time_t current_time = time(NULL);
+
+    if (event_time < current_time) 
+        return "0";
+    string reservations;
+    string res_file = event_path + "/res.txt";
+    ifstream r_file(res_file);
+    r_file >> reservations;
+    r_file.close();
+
+    if (!(stoi(reservations) < stoi(attendees)))
+        return "2";
+    
+    return "1";
+}
+
+vector<string> list_created_events(string UID)
+{
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string created_path = user_path + "/CREATED";
+    string event_list = "";
+    int count = 0;
+
+    for (const auto & entry : fs::directory_iterator(created_path)) {
+        if (entry.is_regular_file()) { // Ignores dir's, ".", ".."
+            string filename = entry.path().filename().string();
+            // Removes ".txt"
+            string EID = filename.substr(0, filename.find(".txt"));
+            string state = get_event_state(EID);
+            event_list += EID + " " + state + " ";
+            count++;
+        }
+    }
+    if (count == 0)
+    {
+        return {};
+    }
+    return split(event_list);
+}
+
+int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse myevents = verify_credentials(args);
+    if (myevents.status == -1)
+    {
+        string msg = "RLI ERR\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RLI NLG\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    if (!compare_passwords(UID, password)) 
+    {
+        string msg = "RLI WRP\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    vector<string> events = list_created_events(UID);
+    if (events.empty())
+    {
+        string msg = "RME NOK\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+
+    string msg = "RME OK";
+    for (const auto &event_info : events) 
+    {
+        msg += " " + event_info;
+    }
+    msg += "\n";
 
     send_UDP_reply(fd, msg, addr, addrlen);
 

@@ -153,14 +153,17 @@ int main(int argc, char *argv[]) {
                             break;
 
                         case CMD_MYEVENTS: 
-                            //myevents(args, activeUser, ip, port, res, addr);
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            myevents(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_MYRESERVATIONS: 
-                            //myreservations(args, activeUser, ip, port, res, addr);
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            //myreservations(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_INVALID: 
+                            if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
                             cout << "Invalid command." << endl;
                             break;
                     }

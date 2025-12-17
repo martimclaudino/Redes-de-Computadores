@@ -37,33 +37,40 @@ int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, sockle
 
 int respond_to_client(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen);
 
-int register_user(string UID, string password, string user_path, string pass_file, string login_file, struct stat &st);
+int register_user(string UID, string password, struct stat &st);
 
 // Arguments
-// -pass_file - path to password file
+// -UID - user ID
 // -input_pass - password to compare
 // Returns true if passwords match, false otherwise
-bool compare_passwords(string pass_file, string input_pass);
+bool compare_passwords(string UID, string input_pass);
 
 // Arguments
-// -login_file - path to login file
+// -UID - user ID
 // Returns true if the user is logged in, false otherwise
-bool is_loggedin(string login_file);
+bool is_loggedin(string UID);
 
 // Arguments
-// -user_path - path to user directory
-// -pass_file - path to password file
+// -UID - user ID
 // Returns true if the user registered
-bool is_registered(string user_path, string pass_file);
+bool is_registered(string UID);
 
 int delete_file(const string file_path);
 
-ServerResponse verify_login_logout(const vector<string> &args);
+ServerResponse verify_credentials(const vector<string> &args);
+
+void login_user(string UID);
+
+void logout_user(string UID);
 
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
-
-ServerResponse verify_unregister(const vector<string> &args);
 
 int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
 
 int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+string get_event_state(string EID);
+
+vector<string> list_created_events(string UID);
+
+int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
