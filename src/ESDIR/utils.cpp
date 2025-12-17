@@ -153,14 +153,13 @@ ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &
     return server_response;
 }
 
-int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen)
+int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen)
 {
     ssize_t n = sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr*)&addr, addrlen);
     
     if (n == -1)
     {
-        perror("sendto");
-        exit(EXIT_FAILURE);
+        perror("Failed to send UDP reply");
         return n;
     }
     return n;
@@ -234,11 +233,7 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
     if (login.status == -1)
     {
         string msg = "RLI ERR\n";
-       if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 1;
     }
     string UID = args[1];
@@ -255,11 +250,7 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
 
         string msg = "RLI REG\n";
         
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
 
         return 0;
     } 
@@ -271,20 +262,12 @@ int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrl
 
         string msg = "RLI OK\n";
 
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
     string msg = "RLI NOK\n";
 
-    if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-    {
-        cerr << "Error sending reply to client." << endl;
-        return 1;
-    }
+    send_UDP_reply(fd, msg, addr, addrlen);
 
     return 0;
 }
@@ -316,11 +299,7 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
     if (unregister.status == -1)
     {
         string msg = "RUR ERR\n";
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 1;
     }
     string UID = args[1];
@@ -331,31 +310,19 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
     if (!is_loggedin(login_file))
     {
         string msg = "RUR NOK\n";
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (!is_registered(user_path, pass_file))
     {
         string msg = "RUR UNR\n";
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (!compare_passwords(pass_file, password))
     {
         string msg = "RUR WRP\n";
-        if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-        {
-            cerr << "Error sending reply to client." << endl;
-            return 1;
-        }
+        send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (unlink(login_file.c_str()) != 0) {
@@ -367,11 +334,6 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
         return 1;
     }
     string msg = "RUR OK\n";
-
-    if (send_UDP_reply(fd, msg, addr, addrlen) == -1)
-    {
-        cerr << "Error sending reply to client." << endl;
-        return 1;
-    }
+    send_UDP_reply(fd, msg, addr, addrlen);
     return 0;
 }

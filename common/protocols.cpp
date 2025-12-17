@@ -50,8 +50,7 @@ int send_UDP_message(int fd, const string &message, struct addrinfo* &res)
     
     if (n == -1)
     {
-        perror("sendto");
-        exit(EXIT_FAILURE);
+        perror("Failed to send UDP reply");
         return n;
     }
     

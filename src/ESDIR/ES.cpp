@@ -43,6 +43,13 @@ int main(int argc, char *argv[]) {
     {
         verbose = true;
     }
+    for (int i = 0; i < argc; i++)
+    {
+        cout << argv[i];
+    }
+    cout << endl;
+    if (verbose) cout << "Verbose mode ON" << endl;
+    else cout << "Verbose mode OFF" << endl;
 
     // Signal handler setup
     struct sigaction sa;
@@ -110,9 +117,14 @@ int main(int argc, char *argv[]) {
                 {
                     struct sockaddr_in client_addr;
                     socklen_t addr_len = sizeof(client_addr);
+
+                    // Convert IP to string
+                    char *client_ip = inet_ntoa(client_addr.sin_addr);
+
+                    // Convert port to int
+                    int client_port = ntohs(client_addr.sin_port);
                     
                     ServerResponse client_request = receive_UDP_request(udp_fd, client_addr, addr_len);
-                    cout << "Received UDP request: " << client_request.msg << endl;
                     if (client_request.status == -1)
                     {
                         cerr << "Error receiving request from client." << endl;
@@ -126,11 +138,22 @@ int main(int argc, char *argv[]) {
                     switch (cmd)
                     {
                         case CMD_LOGIN: 
+                            if (verbose) 
+                            {
+                                cout << "-----------------------------" << endl;
+                                cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
+                                    << "|Command: " << client_request.msg; 
+                            }
                             login(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_UNREGISTER: 
-                            cout << "Unregister command received." << endl;
+                            if (verbose) 
+                            {
+                                cout << "-----------------------------" << endl;
+                                cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
+                                    << "|Command: " << client_request.msg; 
+                            }
                             unregister(args, udp_fd, client_addr, addr_len);
                             break;
 

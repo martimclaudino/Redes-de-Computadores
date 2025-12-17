@@ -31,7 +31,9 @@ int setup_TCP_server(string port);
 
 ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen);
 
-int send_UDP_reply(int fd, string message, struct sockaddr_in addr, socklen_t addrlen);
+int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen);
+
+int respond_to_client(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen);
 
 int register_user(string UID, string password, string user_path, string pass_file, string login_file, struct stat &st);
 
