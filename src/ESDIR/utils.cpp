@@ -392,14 +392,10 @@ string get_event_state(string EID)
     {
         return "3";
     }
-    string event_data, attendees, date, hour;
+    string uid, event_name, desc_fname, attendees, date, hour;
     ifstream e_file(start_file);
-    e_file >> event_data;
+    e_file >> uid >> event_name >> desc_fname >> attendees >> date >> hour;
     e_file.close();
-    auto args = split(event_data);
-    attendees = args[3];
-    date = args[4];
-    hour = args[5];
 
     struct tm t = {0};
     t.tm_mday = stoi(date.substr(0, 2));
@@ -419,7 +415,7 @@ string get_event_state(string EID)
     r_file >> reservations;
     r_file.close();
 
-    if (!(stoi(reservations) < stoi(attendees)))
+    if (!(reservations < attendees))
         return "2";
     
     return "1";
@@ -432,8 +428,10 @@ vector<string> list_created_events(string UID)
     string event_list = "";
     int count = 0;
 
-    for (const auto & entry : fs::directory_iterator(created_path)) {
-        if (entry.is_regular_file()) { // Ignores dir's, ".", ".."
+    for (const auto & entry : fs::directory_iterator(created_path)) 
+    {
+        if (entry.is_regular_file())    // Ignores dir's, ".", ".."
+        { 
             string filename = entry.path().filename().string();
             // Removes ".txt"
             string EID = filename.substr(0, filename.find(".txt"));
