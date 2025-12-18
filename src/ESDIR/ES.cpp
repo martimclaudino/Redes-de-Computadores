@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
                         {
                             case CMD_CREATE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                login(args, udp_fd, client_addr, addr_len);
+                                create(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_UNREGISTER: 

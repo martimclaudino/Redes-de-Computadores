@@ -82,3 +82,9 @@ int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t ad
 int get_reservations(string EID, string UID);
 
 int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_create(const vector<string> &args);
+
+string get_next_eid();
+
+int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

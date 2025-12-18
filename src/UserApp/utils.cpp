@@ -505,7 +505,6 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         return 1;
     }
     ServerResponse server_response = receive_TCP_message(fd, CREATE_RESPONSE);
-    cout << "Server response: " << server_response.msg << endl;
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
@@ -517,7 +516,6 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         return 1;
     }
     auto create_result = split(server_response.msg);
-
     if (create_result[1] == "NOK")
         cout << "Event couldn't be created" << endl;
     else if (create_result[1] == "NLG")

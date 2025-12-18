@@ -295,7 +295,7 @@ int delete_file(const string file_path)
     }
     return 0;
 }
-
+// For UDP functions
 ServerResponse verify_credentials(const vector<string> &args)
 {
     ServerResponse response;
@@ -409,7 +409,7 @@ int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
     ServerResponse logout = verify_credentials(args);
     if (logout.status == -1)
     {
-        string msg = "RLI ERR\n";
+        string msg = "RLO ERR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 1;
     }
@@ -419,24 +419,24 @@ int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
 
     if (!is_loggedin(UID)) 
     {
-        string msg = "RLI NOK\n";
+        string msg = "RLO NOK\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (!is_registered(UID)) 
     {
-        string msg = "RLI UNR\n";
+        string msg = "RLO UNR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
     if (compare_passwords(UID, password)) 
     {
         logout_user(UID);
-        string msg = "RLI OK\n";
+        string msg = "RLO OK\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     } 
-    string msg = "RLI WRP\n";
+    string msg = "RLO WRP\n";
 
     send_UDP_reply(fd, msg, addr, addrlen);
 
@@ -542,7 +542,7 @@ int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t ad
     ServerResponse myevents = verify_credentials(args);
     if (myevents.status == -1)
     {
-        string msg = "RLI ERR\n";
+        string msg = "RME ERR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 1;
     }
@@ -551,13 +551,13 @@ int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t ad
 
     if (!is_loggedin(UID)) 
     {
-        string msg = "RLI NLG\n";
+        string msg = "RME NLG\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (!compare_passwords(UID, password)) 
     {
-        string msg = "RLI WRP\n";
+        string msg = "RME WRP\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
@@ -632,7 +632,7 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
     ServerResponse myreservations = verify_credentials(args);
     if (myreservations.status == -1)
     {
-        string msg = "RLI ERR\n";
+        string msg = "RMR ERR\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 1;
     }
@@ -641,13 +641,13 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
 
     if (!is_loggedin(UID)) 
     {
-        string msg = "RLI NLG\n";
+        string msg = "RMR NLG\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
     if (!compare_passwords(UID, password)) 
     {
-        string msg = "RLI WRP\n";
+        string msg = "RMR WRP\n";
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
@@ -681,7 +681,146 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
     return 0;
 }
 
+ServerResponse verify_create(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args[3].length() > 10)
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    int day, month, year, hour, minute;
+    if (sscanf(args[4].c_str(), "%2d-%2d-%4d", &day, &month, &year) != 3)
+    {
+        response.status = -1;  
+        return response;
+    }
+    if (sscanf(args[5].c_str(), "%2d:%2d", &hour, &minute) != 2)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (day < 1 || day > 31 || month < 1 || month > 12 || hour < 0 || hour > 23 || minute < 0 || minute > 59)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (!std::filesystem::exists(args[7]))
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+string get_next_eid() 
+{
+    int max_id = 0;
+    string path = "src/ESDIR/EVENTS";
+
+    if (!fs::exists(path)) 
+    {
+        fs::create_directories(path);
+        return "001";
+    }
+    for (const auto & entry : fs::directory_iterator(path)) 
+    {
+        if (entry.is_directory()) {
+            string dirname = entry.path().filename().string();
+            int id = stoi(dirname);
+            if (id > max_id) max_id = id;
+        }
+    }
+    stringstream ss;
+    ss << setfill('0') << setw(3) << (max_id + 1);
+    return ss.str();
+}
+
 int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
+    ServerResponse create = verify_create(args);
+    if (create.status == -1)
+    {
+        string msg = "RCE ERR\n";
+        send_TCP_reply(fd, msg);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RCE NLG\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (!compare_passwords(UID, password)) 
+    {
+        string msg = "RCE WRP\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string file_name = args[7];
+    string file_size = args[8];
+    string EID = get_next_eid();
+    // EVENT DIR
+    string event_path = "src/ESDIR/EVENTS/" + EID;
+    if (!fs::create_directories(event_path)) 
+    {
+        string msg = "RCE NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    // RESERVATION DIR
+    string reservations_path = "src/ESDIR/EVENTS/" + EID +  "/RESERVATIONS";
+    if (!fs::create_directories(reservations_path))
+    {
+        string msg = "RCE NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string event_name = args[3];
+    string date = args[4];
+    string hour = args[5];
+    string attendance = args[6];
+    // start.txt file
+    string start_file_path = event_path + "/start.txt";
+    ofstream start_file(start_file_path);
+    start_file << UID << " " << event_name << " " << file_name << " " << attendance << " " << date << " " << hour << "\n";
+    start_file.close(); 
+    // res.txt
+    string res_file_path = event_path + "/res.txt";
+    ofstream res_file(res_file_path);
+    res_file << "0" << "\n";
+    // DESCRIPTION DIR
+    string description_path = "src/ESDIR/EVENTS/" + EID + "/DESCRIPTION";
+    if (!fs::create_directories(description_path)) 
+    {
+        string msg = "RCE NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string description_file_path = description_path + "/" + file_name;
+    ofstream description_file(description_file_path);
+    description_file << "\n";
+    // Fdata starts at args[9]
+    for (size_t i = 9; i < args.size(); i++) 
+    {
+        description_file << args[i];
+        if (i < args.size() - 1) 
+            description_file << " ";
+    }
+    description_file.close();
+    string msg = "RCE OK " + EID + "\n";
+    send_TCP_reply(fd, msg);
+
     return 0;
 }
