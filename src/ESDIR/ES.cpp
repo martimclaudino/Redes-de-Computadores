@@ -217,24 +217,24 @@ int main(int argc, char *argv[]) {
                                 create(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
-                            case CMD_UNREGISTER: 
+                            case CMD_CLOSE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                unregister(args, udp_fd, client_addr, addr_len);
+                                close_event(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_LOGOUT: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                logout(args, udp_fd, client_addr, addr_len);
+                                logout(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_MYEVENTS: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                myevents(args, udp_fd, client_addr, addr_len);
+                                myevents(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_MYRESERVATIONS: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                myreservations(args, udp_fd, client_addr, addr_len);
+                                myreservations(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_INVALID: 

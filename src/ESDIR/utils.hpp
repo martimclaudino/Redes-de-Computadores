@@ -88,3 +88,7 @@ ServerResponse verify_create(const vector<string> &args);
 string get_next_eid();
 
 int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_close(vector<string> &args);
+
+int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

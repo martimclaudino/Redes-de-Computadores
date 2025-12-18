@@ -824,3 +824,101 @@ int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
 
     return 0;
 }
+
+ServerResponse verify_close(vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (!(args[3].length() == 3))
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[3] < "001" || args[3] > "999")
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse close_event = verify_close(args);
+    if (close_event.status == -1)
+    {
+        string msg = "RCL ERR\n";
+        send_TCP_reply(fd, msg);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    string EID = args[3];
+
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RCL NLG\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if ((!compare_passwords(UID, password) && !is_registered(UID))) 
+    {
+        string msg = "RCL NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    vector<string> event_data = get_event_data(EID);
+    if (event_data.empty() || event_data[0] != UID) 
+    {
+        // Event doesn't exist
+        string msg = "RCL NOE\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string event_UID = event_data[0];
+    if (event_UID != UID) 
+    {
+        // User is not the creator
+        string msg = "RCL EOW\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string event_state = get_event_state(EID);
+    if (event_state == "0")
+    {
+        cout << "0" << endl;
+        string msg = "RCL PST\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (event_state == "2")
+    {
+        cout << "2" << endl;
+        string msg = "RCL SLD\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (event_state == "3")
+    {
+        cout << "3" << endl;
+        string msg = "RCL CLO\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string end_file_path = "src/ESDIR/EVENTS/" + EID + "/end.txt";
+    ofstream end_file(end_file_path);
+    end_file << event_data[4] << " " << event_data[5] << "\n";
+    end_file.close();
+    string msg = "RCL OK\n";
+    cout << "OK" << endl;
+    send_TCP_reply(fd, msg);
+    return 0;
+}
