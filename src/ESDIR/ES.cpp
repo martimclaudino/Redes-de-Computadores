@@ -227,9 +227,9 @@ int main(int argc, char *argv[]) {
                                 list(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
-                            case CMD_MYEVENTS: 
+                            case CMD_SHOW: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                myevents(args, new_tcp_fd, client_addr, addr_len);
+                                show(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_MYRESERVATIONS: 

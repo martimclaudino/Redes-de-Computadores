@@ -884,7 +884,7 @@ int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
                 outputFile.write(&server_response.msg[dataStart], fileSize);
                 
                 outputFile.close();
-                cout << "File '" << show_result[8] << "' saved successfully" << endl;
+                cout << "File '" << show_result[8] << "' saved successfully on " << filePath << endl;
             } 
             else 
             {

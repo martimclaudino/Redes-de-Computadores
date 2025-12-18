@@ -651,6 +651,7 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
+    // FIX ME para ver os ultmios 50 tenho de por numero-eid-data-hora como nome do ficheiro na diretoria RESERVED
     vector<string> events = list_reserved_events(UID);
     if (events.empty())
     {
@@ -976,5 +977,67 @@ int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrle
     }
     string msg = "RLS OK " + event_list + "\n";
     send_UDP_reply(fd, msg, addr, addrlen);
+    return 0;
+}
+
+ServerResponse verify_show(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 2)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[1].length() != 3)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[1] < "001" || args[1] > "999")
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int show(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse show = verify_show(args);
+    if (show.status == -1)
+    {
+        string msg = "RSE ERR\n";
+        send_TCP_reply(fd, msg);
+        return 1;
+    }
+    string EID = args[1];
+    vector<string> event_data = get_event_data(EID);
+    if (event_data.empty()) 
+    {
+        string msg = "RSE NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string UID = event_data[0];
+    string event_name = event_data[1];
+    string desc_fname = event_data[2];
+    string attendance = event_data[3];
+    string date = event_data[4];
+    string hour = event_data[5];
+    string res_file = "src/ESDIR/EVENTS/" + EID + "/res.txt";
+    string reservations;
+    ifstream r_file(res_file);
+    r_file >> reservations;
+    r_file.close();
+    string description_path = "src/ESDIR/EVENTS/" + EID + "/DESCRIPTION/" + desc_fname;
+    ifstream description_file(description_path);
+    string description((istreambuf_iterator<char>(description_file)), istreambuf_iterator<char>());
+    description_file.close();
+
+    string msg = "RSE OK " + UID + " " + event_name + " " + date + " " + hour + " " + attendance + " " + reservations + " " + desc_fname + " " + to_string(description.size()) + " " + description + "\n";
+    cout << msg;
+    send_TCP_reply(fd, msg);
     return 0;
 }
