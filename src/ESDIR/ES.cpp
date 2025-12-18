@@ -222,9 +222,9 @@ int main(int argc, char *argv[]) {
                                 close_event(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
-                            case CMD_LOGOUT: 
+                            case CMD_LIST: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                logout(args, new_tcp_fd, client_addr, addr_len);
+                                list(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_MYEVENTS: 

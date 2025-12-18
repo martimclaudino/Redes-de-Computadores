@@ -92,3 +92,7 @@ int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
 ServerResponse verify_close(vector<string> &args);
 
 int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_list(const vector<string> &args);

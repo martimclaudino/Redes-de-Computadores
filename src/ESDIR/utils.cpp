@@ -922,3 +922,59 @@ int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t
     send_TCP_reply(fd, msg);
     return 0;
 }
+ServerResponse verify_list(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 1)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[0] != "LST")
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse list = verify_list(args);
+    if (list.status == -1)
+    {
+        string msg = "RST ERR\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 1;
+    }
+    string events_path = "src/ESDIR/EVENTS/";
+    string event_list = "";
+    int event_count = 0;
+
+    for (const auto & entry : fs::directory_iterator(events_path)) 
+    {
+        if (entry.is_directory())    // Events are directories
+        { 
+            string EID = entry.path().filename().string();
+            string state = get_event_state(EID);
+            auto event_data = get_event_data(EID);
+            string event_name = event_data[1];
+            string event_date = event_data[4];
+            string event_hour = event_data[5];
+
+            event_list += EID + " " + event_name + " " + state + " " + event_date + " " + event_hour + " ";
+            event_count++;
+        }
+    }
+    if (event_count == 0)
+    {
+        string msg = "RLS NOK\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    string msg = "RLS OK " + event_list + "\n";
+    send_UDP_reply(fd, msg, addr, addrlen);
+    return 0;
+}
