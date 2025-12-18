@@ -69,8 +69,14 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
 
 int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
 
+vector<string> get_event_data(string EID);
+
 string get_event_state(string EID);
 
 vector<string> list_created_events(string UID);
 
 int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+int get_reservations(string EID, string UID);
+
+int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

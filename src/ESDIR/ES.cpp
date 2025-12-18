@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
                         case CMD_MYRESERVATIONS: 
                             if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                            //myreservations(args, udp_fd, client_addr, addr_len);
+                            myreservations(args, udp_fd, client_addr, addr_len);
                             break;
 
                         case CMD_INVALID: 

@@ -378,36 +378,56 @@ int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
     return 0;
 }
 
-string get_event_state(string EID)
+vector<string> get_event_data(string EID)
 {
     string event_path = "src/ESDIR/EVENTS/" + EID;
     string start_file = event_path + "/start.txt";
     struct stat st;
     if (stat(start_file.c_str(), &st) == -1) 
     {
-        return "";
+        return {};
     }
+    ifstream e_file(start_file);
+    vector<string> event_data;
+    string arg;
+    while (e_file >> arg)
+    {
+        event_data.push_back(arg);
+    }
+    e_file.close();
+    return event_data;
+}
+
+string get_event_state(string EID)
+{
+    string event_path = "src/ESDIR/EVENTS/" + EID;
+    string start_file = event_path + "/start.txt";
+    struct stat st;
     string end_file = event_path + "/end.txt"; 
     if (stat(end_file.c_str(), &st) == 0) 
     {
         return "3";
     }
     string uid, event_name, desc_fname, attendees, date, hour;
-    ifstream e_file(start_file);
-    e_file >> uid >> event_name >> desc_fname >> attendees >> date >> hour;
-    e_file.close();
-
+    vector<string> event_data = get_event_data(EID);
+    uid = event_data[0];
+    event_name = event_data[1];
+    desc_fname = event_data[2];
+    attendees = event_data[3];
+    date = event_data[4];
+    hour = event_data[5];
     struct tm t = {0};
     t.tm_mday = stoi(date.substr(0, 2));
     t.tm_mon  = stoi(date.substr(3, 2)) - 1;
     t.tm_year = stoi(date.substr(6, 4)) - 1900; // Number of years since 1900
     t.tm_hour = stoi(hour.substr(0, 2));  
     t.tm_min  = stoi(hour.substr(3, 2));
+    t.tm_sec  = 0;
 
     time_t event_time = mktime(&t);
     time_t current_time = time(NULL);
 
-    if (event_time < current_time) 
+    if (event_time < current_time)      // FIX ME tenho de criar o ficheiro end.txt aqui
         return "0";
     string reservations;
     string res_file = event_path + "/res.txt";
@@ -488,5 +508,93 @@ int myevents(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t ad
 
     send_UDP_reply(fd, msg, addr, addrlen);
 
+    return 0;
+}
+
+int get_reservations(string EID, string UID, string date, string time)
+{
+    string reservation_path = "src/ESDIR/EVENTS/" + EID + "/RESERVATIONS";
+    string reservation_file = reservation_path + "/" + UID + "-" + date + "-" + time + ".txt";
+    struct stat st;
+    if (stat(reservation_file.c_str(), &st) == -1) 
+    {
+        return 0;
+    }
+    // Our reservation file only has the number of reservations
+    // If UID and date-time are on the name, it's redundant to store them in the file
+    ifstream r_file(reservation_file);
+    string reservations;
+    r_file >> reservations;
+    r_file.close();
+    return stoi(reservations);
+}
+
+vector<string> list_reserved_events(string UID)
+{
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string reserved_path = user_path + "/RESERVED";
+    string event_list = "";
+    int count = 0;
+
+    for (const auto & entry : fs::directory_iterator(reserved_path)) 
+    {
+        if (entry.is_regular_file())    // Ignores dir's, ".", ".."
+        { 
+            string filename = entry.path().filename().string();
+            // EID-date-time.txt
+            string EID = filename.substr(0, 3);
+            string date = filename.substr(4, 10);
+            string time = filename.substr(15, 8);
+            int reservations = get_reservations(EID, UID, date, time);                  // FIX ME eu posso só ver no proprio ficheiro em vez de ir aos EVENTS/
+            event_list += EID + " " + date + " " + time + " " + to_string(reservations) + " ";
+            count++;
+        }
+    }
+    if (count == 0)
+    {
+        return {};
+    }
+    return split(event_list);
+}
+
+int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)    // FIX ME como é que vejo só as ultimas 50?
+{
+    ServerResponse myreservations = verify_credentials(args);
+    if (myreservations.status == -1)
+    {
+        string msg = "RLI ERR\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RLI NLG\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    if (!compare_passwords(UID, password)) 
+    {
+        string msg = "RLI WRP\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    vector<string> events = list_reserved_events(UID);
+    if (events.empty())
+    {
+        string msg = "RMR NOK\n";
+        send_UDP_reply(fd, msg, addr, addrlen);
+        return 0;
+    }
+    string msg = "RMR OK";
+    for (const auto &event_info : events) 
+    {
+        msg += " " + event_info;
+    }
+    msg += "\n";
+    send_UDP_reply(fd, msg, addr, addrlen);
+    
     return 0;
 }

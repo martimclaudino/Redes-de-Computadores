@@ -21,7 +21,7 @@ using namespace std;
 #define LIST_RESPONSE 1000000 //3308 // 8 + 1000 max events * 3 characters per event + 4 spaces per event
 #define SHOW_RESPONSE 100000
 #define RESERVE_RESPONSE 11
-#define MYRESERVATIONS_RESPONSE 32
+#define MYRESERVATIONS_RESPONSE 1258
 
 typedef enum
 {
