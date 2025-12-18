@@ -29,13 +29,15 @@ void handle_sigchld(int sig);
 
 int setup_UDP_server(string port);
 
-int setup_TCP_server(string port);
-
 ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen);
 
 int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen);
 
-int respond_to_client(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen);
+int setup_TCP_server(string port);
+
+ServerResponse receive_TCP_request(int fd);
+
+ssize_t send_TCP_reply(int fd, const string &message);
 
 int register_user(string UID, string password, struct stat &st);
 

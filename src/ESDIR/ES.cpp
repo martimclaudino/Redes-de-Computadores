@@ -169,22 +169,24 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-                // --- VERIFICAR TCP ---
+                // --- TCP ---
                 if (FD_ISSET(tcp_listen_fd, &testfds)) 
                 {
                     struct sockaddr_in client_addr;
                     socklen_t addr_len = sizeof(client_addr);
+
+                    // Convert IP to string
+                    char *client_ip = inet_ntoa(client_addr.sin_addr);
+
+                    // Convert port to int
+                    int client_port = ntohs(client_addr.sin_port);
                     
                     int new_tcp_fd = accept(tcp_listen_fd, (struct sockaddr*)&client_addr, &addr_len);
                     if (new_tcp_fd == -1) 
                     {
                         perror("accept");
-                        // Aqui não podemos fazer continue porque sairia do switch, não do while.
-                        // Mas como estamos no fim do loop, o break funciona bem.
                         break; 
                     }
-
-                    // AQUI FAZEMOS O FORK
                     pid_t pid = fork();
 
                     if (pid == 0) 
@@ -193,11 +195,56 @@ int main(int argc, char *argv[]) {
                         close(tcp_listen_fd); // Filho não precisa do listener
                         close(udp_fd);        // Filho não precisa do UDP
                         
-                        // Tratar do pedido TCP (Ler "SGL...", enviar ficheiro)
-                        // process_tcp_request(new_tcp_fd);
-                        
+                        struct timeval tv;
+                        tv.tv_sec = 10;  // 10 seconds timeout
+                        tv.tv_usec = 0;
+                        setsockopt(new_tcp_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
+                        ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                        if (client_request.status == -1)
+                        {
+                            cerr << "Error receiving request from client." << endl;
+                            continue;
+                        }
+                        auto args = split(client_request.msg);
+
+                        CommandType cmd = parse_command(args[0]);
+
+                        switch (cmd)
+                        {
+                            case CMD_CREATE: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                login(args, udp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_UNREGISTER: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                unregister(args, udp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_LOGOUT: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                logout(args, udp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_MYEVENTS: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                myevents(args, udp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_MYRESERVATIONS: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                myreservations(args, udp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_INVALID: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                cout << "Invalid command." << endl;
+                                break;
+                        }
+
                         close(new_tcp_fd);
-                        exit(0); // Filho morre aqui
+                        exit(0); 
                     } 
                     else if (pid > 0) 
                     {

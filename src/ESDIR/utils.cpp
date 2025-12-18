@@ -92,6 +92,37 @@ int setup_UDP_server(string port)
     return fd;
 }
 
+ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen)
+{
+    ServerResponse server_response;
+    char buffer[MYEVENTS_RESPONSE];     // biggest size in UDP messages
+    
+    ssize_t n = recvfrom(fd, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&addr, &addrlen);
+
+    server_response.status = n;
+    
+    if (n == -1) 
+    {
+        perror("recvfrom");
+        return server_response;
+    }
+    string msg(buffer,n);
+    server_response.msg = msg;
+    return server_response;
+}
+
+int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ssize_t n = sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr*)&addr, addrlen);
+    
+    if (n == -1)
+    {
+        perror("Failed to send UDP reply");
+        return n;
+    }
+    return n;
+}
+
 int setup_TCP_server(string port)
 {
     struct addrinfo hints, *res;
@@ -142,35 +173,69 @@ int setup_TCP_server(string port)
     return fd;
 }
 
-ServerResponse receive_UDP_request(int fd, struct sockaddr_in &addr, socklen_t &addrlen)
+ServerResponse receive_TCP_request(int fd)
 {
     ServerResponse server_response;
-    char buffer[MYEVENTS_RESPONSE];     // biggest size in UDP messages
-    
-    ssize_t n = recvfrom(fd, buffer, sizeof(buffer)-1, 0, (struct sockaddr *)&addr, &addrlen);
+    string msg = "";
+    char ch;
+    ssize_t n;
 
-    server_response.status = n;
-    
-    if (n == -1) 
+    while (true)
     {
-        perror("recvfrom");
-        return server_response;
+        n = read(fd, &ch, 1);
+
+        if (n == -1) 
+        {
+            // Read error
+            server_response.status = -1;    
+            perror("read tcp");
+            return server_response;
+        }
+        else if (n == 0) 
+        {
+            // Connection closed by client (EOF)
+            // If the message is not empty, return what was read so far
+            if (msg.empty()) server_response.status = 0; // Clean close
+            else server_response.status = 1; // Closed halfway (or end without \n)
+            break; 
+        }
+
+        msg += ch;
+
+        // If the end of the line is found, stop reading immediately
+        if (ch == '\n') 
+        {
+            server_response.status = 1;
+            break;
+        }
     }
-    string msg(buffer,n);
+
     server_response.msg = msg;
     return server_response;
 }
 
-int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, socklen_t addrlen)
+ssize_t send_TCP_reply(int fd, const string &message)
 {
-    ssize_t n = sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr*)&addr, addrlen);
-    
-    if (n == -1)
+    ssize_t total_sent = 0;
+    ssize_t message_length = message.size();
+    ssize_t n;
+    while (total_sent < message_length)
     {
-        perror("Failed to send UDP reply");
-        return n;
+        // MSG_NOSIGNAL avoids server crashing if client disconnects abruptly (prevents SIGPIPE)
+        n = send(fd, message.c_str() + total_sent, message_length - total_sent, MSG_NOSIGNAL);
+        
+        if (n == -1)
+        {
+            perror("Failed to send TCP reply");
+            return -1;
+        }
+        if (n == 0) 
+        {
+            break; 
+        }
+        total_sent += n;
     }
-    return n;
+    return total_sent;
 }
 
 int register_user(string UID, string password, struct stat &st)
@@ -613,5 +678,10 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
     msg += "\n";
     send_UDP_reply(fd, msg, addr, addrlen);
     
+    return 0;
+}
+
+int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
     return 0;
 }
