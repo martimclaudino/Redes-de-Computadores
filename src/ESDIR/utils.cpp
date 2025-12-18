@@ -427,8 +427,13 @@ string get_event_state(string EID)
     time_t event_time = mktime(&t);
     time_t current_time = time(NULL);
 
-    if (event_time < current_time)      // FIX ME tenho de criar o ficheiro end.txt aqui
+    if (event_time < current_time)
+    {   
+        ofstream out_file(end_file);
+        out_file << date << " " << hour << "\n";
+        out_file.close(); 
         return "0";
+    }
     string reservations;
     string res_file = event_path + "/res.txt";
     ifstream r_file(res_file);
@@ -557,7 +562,7 @@ vector<string> list_reserved_events(string UID)
     return split(event_list);
 }
 
-int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)    // FIX ME como é que vejo só as ultimas 50?
+int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
 {
     ServerResponse myreservations = verify_credentials(args);
     if (myreservations.status == -1)
@@ -588,10 +593,22 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    string msg = "RMR OK";
-    for (const auto &event_info : events) 
+    int total_reservations = events.size();
+    int limit = 50;
+    int start_index = 0;
+    int count_to_send = total_reservations;
+
+    // Only the last 50 reservations
+    if (total_reservations > limit) 
     {
-        msg += " " + event_info;
+        start_index = total_reservations - limit;
+        count_to_send = limit;
+    }
+    string msg = "RMR OK "; 
+
+    for (int i = start_index; i < total_reservations; i++) 
+    {
+        msg += " " + events[i];
     }
     msg += "\n";
     send_UDP_reply(fd, msg, addr, addrlen);
