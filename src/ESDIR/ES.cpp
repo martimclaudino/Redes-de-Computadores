@@ -232,14 +232,20 @@ int main(int argc, char *argv[]) {
                                 show(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
-                            case CMD_MYRESERVATIONS: 
+                            case CMD_RESERVE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                myreservations(args, new_tcp_fd, client_addr, addr_len);
+                                reserve(args, new_tcp_fd, client_addr, addr_len);
+                                break;
+
+                            case CMD_CHANGEPASS: 
+                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                changePass(args, new_tcp_fd, client_addr, addr_len);
                                 break;
 
                             case CMD_INVALID: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                cout << "Invalid command." << endl;
+                                string msg = "INV ERR\n";
+                                send_UDP_reply(new_tcp_fd, msg, client_addr, addr_len);
                                 break;
                         }
 

@@ -59,6 +59,7 @@ bool is_registered(string UID);
 
 int delete_file(const string file_path);
 
+// For UDP functions
 ServerResponse verify_credentials(const vector<string> &args);
 
 void login_user(string UID);
@@ -100,3 +101,13 @@ ServerResponse verify_list(const vector<string> &args);
 ServerResponse verify_show(const vector<string> &args);
 
 int show(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_reserve(const vector<string> &args);
+
+int count_user_reservations(string UID);
+
+int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+
+ServerResponse verify_changePass(const vector<string> &args);
+
+int changePass(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);

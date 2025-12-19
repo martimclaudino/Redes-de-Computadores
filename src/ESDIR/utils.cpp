@@ -295,7 +295,7 @@ int delete_file(const string file_path)
     }
     return 0;
 }
-// For UDP functions
+
 ServerResponse verify_credentials(const vector<string> &args)
 {
     ServerResponse response;
@@ -611,10 +611,10 @@ vector<string> list_reserved_events(string UID)
         if (entry.is_regular_file())    // Ignores dir's, ".", ".."
         { 
             string filename = entry.path().filename().string();
-            // EID-date-time.txt
-            string EID = filename.substr(0, 3);
-            string date = filename.substr(4, 10);
-            string time = filename.substr(15, 8);
+            // reservation_count-EID-date-time.txt
+            string EID = filename.substr(2, 3);
+            string date = filename.substr(6, 10);
+            string time = filename.substr(17, 8);
             int reservations = get_reservations(EID, UID, date, time);                  // FIX ME eu posso só ver no proprio ficheiro em vez de ir aos EVENTS/
             event_list += EID + " " + date + " " + time + " " + to_string(reservations) + " ";
             count++;
@@ -651,7 +651,6 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
         send_UDP_reply(fd, msg, addr, addrlen);
         return 0;
     }
-    // FIX ME para ver os ultmios 50 tenho de por numero-eid-data-hora como nome do ficheiro na diretoria RESERVED
     vector<string> events = list_reserved_events(UID);
     if (events.empty())
     {
@@ -895,21 +894,18 @@ int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t
     string event_state = get_event_state(EID);
     if (event_state == "0")
     {
-        cout << "0" << endl;
         string msg = "RCL PST\n";
         send_TCP_reply(fd, msg);
         return 0;
     }
     if (event_state == "2")
     {
-        cout << "2" << endl;
         string msg = "RCL SLD\n";
         send_TCP_reply(fd, msg);
         return 0;
     }
     if (event_state == "3")
     {
-        cout << "3" << endl;
         string msg = "RCL CLO\n";
         send_TCP_reply(fd, msg);
         return 0;
@@ -919,7 +915,6 @@ int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t
     end_file << event_data[4] << " " << event_data[5] << "\n";
     end_file.close();
     string msg = "RCL OK\n";
-    cout << "OK" << endl;
     send_TCP_reply(fd, msg);
     return 0;
 }
@@ -947,7 +942,7 @@ int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrle
     if (list.status == -1)
     {
         string msg = "RST ERR\n";
-        send_UDP_reply(fd, msg, addr, addrlen);
+        send_TCP_reply(fd, msg);
         return 1;
     }
     string events_path = "src/ESDIR/EVENTS/";
@@ -972,11 +967,11 @@ int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrle
     if (event_count == 0)
     {
         string msg = "RLS NOK\n";
-        send_UDP_reply(fd, msg, addr, addrlen);
+        send_TCP_reply(fd, msg);
         return 0;
     }
     string msg = "RLS OK " + event_list + "\n";
-    send_UDP_reply(fd, msg, addr, addrlen);
+    send_TCP_reply(fd, msg);
     return 0;
 }
 
@@ -1037,7 +1032,197 @@ int show(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrle
     description_file.close();
 
     string msg = "RSE OK " + UID + " " + event_name + " " + date + " " + hour + " " + attendance + " " + reservations + " " + desc_fname + " " + to_string(description.size()) + " " + description + "\n";
-    cout << msg;
+    send_TCP_reply(fd, msg);
+    return 0;
+}
+
+ServerResponse verify_reserve(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 5)
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string password = args[2];
+    if (username.length() != 6 || password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[3].length() != 3)
+    {
+        response.status = -1;
+        return response;
+    }
+    if (args[3] < "001" || args[3] > "999")
+    {
+        response.status = -1;
+        return response;
+    }
+    int num_reservations = stoi(args[4]);
+    if (num_reservations < 1 || num_reservations > 999)
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int count_user_reservations(string UID)
+{
+    string reservation_path = "src/ESDIR/USERS/" + UID + "/RESERVED";
+    int count = 0;
+
+    for (const auto & entry : fs::directory_iterator(reservation_path)) 
+    {
+        if (entry.is_regular_file())    // Ignores dir's, ".", ".."
+            count++;
+        
+    }
+    return count;
+}
+
+int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse reserve = verify_reserve(args);
+    if (reserve.status == -1)
+    {
+        string msg = "RRI ERR\n";
+        send_TCP_reply(fd, msg);
+        return 1;
+    }
+    string UID = args[1];
+    string password = args[2];
+    string EID = args[3];
+    int num_people = stoi(args[4]);
+    string state = get_event_state(EID);
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RRI NLG\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (!compare_passwords(UID, password)) 
+    {
+        string msg = "RRI WRP\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (state == "0")
+    {
+        string msg = "RRI PST\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (state == "2")
+    {
+        string msg = "RRI SLD\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (state == "3")
+    {
+        string msg = "RRI NOK\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    // Update Event res.txt
+    string res_file = "src/ESDIR/EVENTS/" + EID + "/res.txt";
+    string current_reservations;
+    ifstream r_file(res_file);
+    r_file >> current_reservations;
+    r_file.close();
+    int new_current_reservations = num_people + stoi(current_reservations);
+    ofstream r_file_out(res_file);
+    r_file_out << to_string(new_current_reservations) << "\n";
+    r_file_out.close();
+
+    // Update User RESERVED
+    int reservation_count = count_user_reservations(UID) + 1;
+    string reservation_path = "src/ESDIR/USERS/" + UID + "/RESERVED";
+    vector<string> event_data = get_event_data(EID);
+    string date = event_data[4];
+    time_t current_time = time(NULL);
+    struct tm *local_time = localtime(&current_time);
+    stringstream date_time;
+    date_time << put_time(local_time, "%d-%m-%Y-%H:%M:%S");
+    string reservation_file = reservation_path + "/" + to_string(reservation_count) + "-" + EID + "-" + date_time.str() + ".txt";
+    ofstream user_res_file(reservation_file);
+    user_res_file << to_string(num_people) << "\n";
+    user_res_file.close();
+
+    // Update Event RESERVATIONS
+    string event_reservation_path = "src/ESDIR/EVENTS/" + EID + "/RESERVATIONS";
+    string event_reservation_file = event_reservation_path + "/" + UID + "-" + date_time.str() + ".txt";
+    ofstream event_res_file(event_reservation_file);
+    event_res_file << to_string(num_people) << "\n";
+    event_res_file.close();
+    string msg = "RRI ACC\n";
+    send_TCP_reply(fd, msg);
+    return 0;
+}
+
+ServerResponse verify_changePass(const vector<string> &args)
+{
+    ServerResponse response;
+    response.msg = "";
+    response.status = 1;
+    if (args.size() != 4)
+    {
+        response.status = -1;
+        return response;
+    }
+    string username = args[1];
+    string old_password = args[2];
+    string new_password = args[3];
+    if (username.length() != 6 || old_password.length() != 8 || new_password.length() != 8)
+    {
+        response.status = -1;
+        return response;
+    }
+    return response;
+}
+
+int changePass(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+{
+    ServerResponse changePass = verify_changePass(args);
+    if (changePass.status == -1)
+    {
+        string msg = "RPC ERR\n";
+        send_TCP_reply(fd, msg);
+        return 1;
+    }
+    string UID = args[1];
+    string old_password = args[2];
+    string new_password = args[3];
+    if (!is_registered(UID)) 
+    {
+        string msg = "RPC NID\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (!is_loggedin(UID)) 
+    {
+        string msg = "RPC NLG\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    if (!compare_passwords(UID, old_password)) 
+    {
+        string msg = "RPC WRP\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
+    string user_path = "src/ESDIR/USERS/" + UID;
+    string pass_file = user_path + "/password.txt";
+    ofstream p_file(pass_file);
+    p_file << new_password;
+    p_file.close();
+    string msg = "RPC OK\n";
     send_TCP_reply(fd, msg);
     return 0;
 }
