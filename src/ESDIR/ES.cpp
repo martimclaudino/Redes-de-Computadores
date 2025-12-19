@@ -202,52 +202,75 @@ int main(int argc, char *argv[]) {
                         tv.tv_sec = 10;  // 10 seconds timeout
                         tv.tv_usec = 0;
                         setsockopt(new_tcp_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+                        char buffer[4];
+                        recv(new_tcp_fd, buffer, 3, MSG_PEEK);
+                        buffer[3] = '\0';
+                        string command(buffer);
 
-                        ServerResponse client_request = receive_TCP_request(new_tcp_fd);
-                        if (client_request.status == -1)
-                        {
-                            cerr << "Error receiving request from client." << endl;
-                            continue;
-                        }
-                        auto args = split(client_request.msg);
-
-                        CommandType cmd = parse_command(args[0]);
+                        CommandType cmd = parse_command(command);
 
                         switch (cmd)
                         {
                             case CMD_CREATE: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                vector<string> args;
+                                for (int i = 0; i < 9; i++) 
+                                {
+                                    string token = read_token_from_socket(new_tcp_fd);
+                                    args.push_back(token);
+                                }
+                                //args.push_back(receive_TCP_by_size(new_tcp_fd, stoi(args[8])).msg); // Read description file
                                 create(args, new_tcp_fd);
                                 break;
+                            }
 
                             case CMD_CLOSE: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                                auto args = split(client_request.msg);
                                 close_event(args, new_tcp_fd);
                                 break;
+                            }
 
                             case CMD_LIST: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                                auto args = split(client_request.msg);
                                 list(args, new_tcp_fd);
                                 break;
+                            }
 
                             case CMD_SHOW: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                                auto args = split(client_request.msg);
                                 show(args, new_tcp_fd);
                                 break;
-
+                            }
                             case CMD_RESERVE: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                                auto args = split(client_request.msg);
                                 reserve(args, new_tcp_fd);
                                 break;
-
+                            }
                             case CMD_CHANGEPASS: 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                            {
+                                if (verbose) verbose_mode(client_ip, client_port, command);
+                                ServerResponse client_request = receive_TCP_request(new_tcp_fd);
+                                auto args = split(client_request.msg);
                                 changePass(args, new_tcp_fd);
                                 break;
+                            }
 
                             case CMD_INVALID: 
                             { 
-                                if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
+                                if (verbose) verbose_mode(client_ip, client_port, command);
                                 string msg = "INV ERR\n";
                                 send_TCP_reply(new_tcp_fd, msg);
                                 break; 

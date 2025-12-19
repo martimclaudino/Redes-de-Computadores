@@ -35,6 +35,11 @@ int send_UDP_reply(int fd, const string message, struct sockaddr_in addr, sockle
 
 int setup_TCP_server(string port);
 
+string read_token_from_socket(int fd);
+
+// Because of create and show functions
+ServerResponse receive_TCP_by_size(int fd, int size);
+
 ServerResponse receive_TCP_request(int fd);
 
 ssize_t send_TCP_reply(int fd, const string &message);

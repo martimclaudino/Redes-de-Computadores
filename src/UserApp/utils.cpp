@@ -105,7 +105,8 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
     if (server_response.status == -1)
     {
         cerr << "Error receiving response from server." << endl;
-        if (res != nullptr) {
+        if (res != nullptr) 
+        {
             freeaddrinfo(res);
             res = nullptr;
         }

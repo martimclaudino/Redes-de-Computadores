@@ -63,6 +63,11 @@ ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr, int size)
     socklen_t addrlen = sizeof(addr);
     char buffer[size];
 
+    struct timeval tv;
+    tv.tv_sec = 10;
+    tv.tv_usec = 0;
+
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     int n = recvfrom(fd, buffer, sizeof(buffer), 0,
                  (struct sockaddr *)&addr, &addrlen);
     
@@ -70,7 +75,6 @@ ServerResponse receive_UDP_message(int fd, struct sockaddr_in addr, int size)
     
     if (n == -1)
     {
-        exit(1);
         return server_response;
     }
 
@@ -151,10 +155,8 @@ ServerResponse receive_TCP_message(int fd, int size)
             perror("receive");
             return server_response;
         }
-        if (n == 0) {
-            // connection closed
+        if (n == 0) 
             break;
-        }
 
         result.append(buffer, n);
         if (result.find('\n') != string::npos)

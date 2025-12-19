@@ -19,7 +19,7 @@ using namespace std;
 #define CLOSE_RESPONSE 7
 #define MYEVENTS_RESPONSE 5007 // 7 + 1000 max events per user * 5 characters per event
 #define LIST_RESPONSE 1000000 //3308 // 8 + 1000 max events * 3 characters per event + 4 spaces per event
-#define SHOW_RESPONSE 100000
+#define SHOW_RESPONSE 1000000
 #define RESERVE_RESPONSE 11
 #define MYRESERVATIONS_RESPONSE 1258
 

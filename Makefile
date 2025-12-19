@@ -58,6 +58,15 @@ clean:
 	rm -f $(ES_DIR)/*.o
 	rm -f $(COMMON_DIR)/*.o
 
+#-------------------Clean Database-------------------
+clean_db:
+	rm -rf EVENTS
+	rm -rf $(ES_DIR)/USERS
+	rm -rf $(ES_DIR)/EVENTS
+	mkdir EVENTS
+	mkdir $(ES_DIR)/USERS
+	mkdir $(ES_DIR)/EVENTS
+
 # ------------------- Run Targets -------------------
 run_server: ES
 	@echo "Running Server inside $(ES_DIR)..."

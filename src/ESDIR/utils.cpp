@@ -173,6 +173,67 @@ int setup_TCP_server(string port)
     return fd;
 }
 
+string read_token_from_socket(int fd) 
+{
+    string token = "";
+    char ch;
+    
+    while (true) {
+        ssize_t n = read(fd, &ch, 1);
+
+        if (n <= 0) return token; 
+
+        if (ch == ' ' || ch == '\n' || ch == '\r') 
+            break; 
+        
+        token += ch;
+    }
+    return token;
+}
+
+ServerResponse receive_TCP_by_size(int fd, int total_bytes_to_read)
+{
+    ServerResponse server_response;
+    server_response.status = 0; // Assume 0 como sucesso inicial
+    server_response.msg = "";
+    
+    // Buffer temporário pequeno (não faças char buffer[size] se o size for grande!)
+    char buffer[1024]; 
+    int total_read = 0;
+
+    while (total_read < total_bytes_to_read)
+    {
+        // 1. Calcular quanto falta ler
+        int left_to_read = total_bytes_to_read - total_read;
+        
+        // 2. Não tentar ler mais do que o tamanho do nosso buffer
+        int bytes_to_ask = min(left_to_read, (int)sizeof(buffer));
+
+        // 3. Ler APENAS o necessário
+        ssize_t n = read(fd, buffer, bytes_to_ask);
+
+        if (n == -1)
+        {
+            perror("receive_TCP_by_size");
+            server_response.status = -1;
+            return server_response;
+        }
+        if (n == 0) // Conexão fechada inesperadamente
+        {
+            server_response.status = -1; 
+            return server_response;
+        }
+
+        // Adicionar o pedaço lido à string final
+        server_response.msg.append(buffer, n);
+        total_read += n;
+        
+        // cout << "DEBUG: Lidos " << total_read << "/" << total_bytes_to_read << endl;
+    }
+
+    return server_response;
+}
+
 ServerResponse receive_TCP_request(int fd)
 {
     ServerResponse server_response;
@@ -741,11 +802,6 @@ ServerResponse verify_create(const vector<string> &args)
         response.status = -1;
         return response;
     }
-    if (!std::filesystem::exists(args[7]))
-    {
-        response.status = -1;
-        return response;
-    }
     return response;
 }
 
@@ -774,6 +830,11 @@ string get_next_eid()
 
 int create(vector<string> &args, int fd)
 {
+    for (const auto &arg : args) 
+    {
+        cout << "[" << arg << "] ";
+    }
+    cout << endl;
     ServerResponse create = verify_create(args);
     if (create.status == -1)
     {
@@ -798,6 +859,10 @@ int create(vector<string> &args, int fd)
     string file_name = args[7];
     string file_size = args[8];
     string EID = get_next_eid();
+    // User CREATED dir
+    string user_created_path = "src/ESDIR/USERS/" + UID + "/CREATED/" + EID + ".txt";
+    ofstream user_file(user_created_path);
+    user_file.close();
     // EVENT DIR
     string event_path = "src/ESDIR/EVENTS/" + EID;
     if (!fs::create_directories(event_path)) 
@@ -854,15 +919,28 @@ int create(vector<string> &args, int fd)
     {
         return 1;
     }
-    ofstream description_file(description_file_path);
-    description_file << "\n";
-    // Fdata starts at args[9]
-    for (size_t i = 9; i < args.size(); i++) 
+    ofstream description_file(description_file_path, ios::binary);
+    char buffer[CREATE_RESPONSE];
+    long total_read = 0;
+    ssize_t bytes_read;
+
+    while (total_read < stoi(file_size)) 
     {
-        description_file << args[i];
-        if (i < args.size() - 1) 
-            description_file << " ";
+        size_t bytes_to_read = min((long)sizeof(buffer), stoi(file_size) - total_read);
+        
+        bytes_read = read(fd, buffer, bytes_to_read);
+        
+        if (bytes_read <= 0) 
+        {
+            perror("Socket");
+            description_file.close();
+            return 1; 
+        }
+
+        description_file.write(buffer, bytes_read);
+        total_read += bytes_read;
     }
+    
     description_file.close();
     release_lock(desc_lock_fd);
     string msg = "RCE OK " + EID + "\n";
@@ -1079,11 +1157,31 @@ int show(vector<string> &args, int fd)
     r_file >> reservations;
     r_file.close();
     string description_path = "src/ESDIR/EVENTS/" + EID + "/DESCRIPTION/" + desc_fname;
-    ifstream description_file(description_path);
-    string description((istreambuf_iterator<char>(description_file)), istreambuf_iterator<char>());
-    description_file.close();
+    ifstream description_file(description_path, ios::binary | ios::ate);
+    if (!description_file.is_open()) {
+        send_TCP_reply(fd, "RSE NOK\n");
+        return 0;
+    }
+    streamsize file_size = description_file.tellg();
+    description_file.seekg(0, ios::beg);
 
-    string msg = "RSE OK " + UID + " " + event_name + " " + date + " " + hour + " " + attendance + " " + reservations + " " + desc_fname + " " + to_string(description.size()) + " " + description + "\n";
+    vector<char> fileData(file_size);
+    if (!description_file.read(fileData.data(), file_size)) 
+    {
+        cout << "Error: Could not read file content." << endl;
+        return 1;
+    }
+    description_file.close();
+    
+    stringstream header;
+    header << "RSE OK " << UID << " " << event_name << " " << date << " " << hour << " " 
+       << attendance << " " << reservations << " " << desc_fname << " " << file_size << " ";
+
+    string msg = header.str();
+
+    msg.append(fileData.data(), file_size);
+
+    msg += "\n";
     send_TCP_reply(fd, msg);
     return 0;
 }
@@ -1262,7 +1360,7 @@ int changePass(vector<string> &args, int fd)
     ServerResponse changePass = verify_changePass(args);
     if (changePass.status == -1)
     {
-        string msg = "RPC ERR\n";
+        string msg = "RCP ERR\n";
         send_TCP_reply(fd, msg);
         return 1;
     }
@@ -1271,19 +1369,19 @@ int changePass(vector<string> &args, int fd)
     string new_password = args[3];
     if (!is_registered(UID)) 
     {
-        string msg = "RPC NID\n";
+        string msg = "RCP NID\n";
         send_TCP_reply(fd, msg);
         return 0;
     }
     if (!is_loggedin(UID)) 
     {
-        string msg = "RPC NLG\n";
+        string msg = "RCP NLG\n";
         send_TCP_reply(fd, msg);
         return 0;
     }
     if (!compare_passwords(UID, old_password)) 
     {
-        string msg = "RPC WRP\n";
+        string msg = "RCP WRP\n";
         send_TCP_reply(fd, msg);
         return 0;
     }
@@ -1298,7 +1396,7 @@ int changePass(vector<string> &args, int fd)
     p_file << new_password;
     p_file.close();
     release_lock(lock_fd);
-    string msg = "RPC OK\n";
+    string msg = "RCP OK\n";
     send_TCP_reply(fd, msg);
     return 0;
 }
