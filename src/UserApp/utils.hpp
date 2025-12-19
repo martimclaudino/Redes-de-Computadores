@@ -58,11 +58,11 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
 
 bool verify_list(const vector<string> &args);
 
-int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
+int list(const vector<string> &args, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_show(const vector<string> &args);
 
-int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res);
+int show(const vector<string> &args, string &ip, string &port, struct addrinfo* &res);
 
 bool verify_reserve(const vector<string> &args);
 

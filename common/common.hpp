@@ -8,8 +8,8 @@
 
 using namespace std;
 
-#define PORT "58000"
-#define IPADDRESS "tejo.tecnico.ulisboa.pt"   // "MartimClaudino"         // Change into the lt5 address    
+#define PORT "58010"
+#define IPADDRESS "127.0.0.1"
 
 #define LOGIN_RESPONSE 7
 #define CHANGEPASS_RESPONSE 7

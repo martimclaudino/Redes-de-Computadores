@@ -95,12 +95,12 @@ int main(int argc, char *argv[])
                 break;
             
             case CMD_LIST: 
-                list(args, activeUser, ip, port, res);
+                list(args, ip, port, res);
                 break;
             
 
             case CMD_SHOW: 
-                show(args, activeUser, ip, port, res);
+                show(args, ip, port, res);
                 break;
 
             case CMD_RESERVE: 

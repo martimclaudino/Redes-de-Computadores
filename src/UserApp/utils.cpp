@@ -63,7 +63,6 @@ ServerResponse verify_login(const vector<string> &args)
     return response;
 }
 
-// FIX ME add the ERR case to each function
 int login (const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res, struct sockaddr_in &addr)
 {
     if (activeUser.loggedIn)
@@ -130,6 +129,8 @@ int login (const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         activeUser.userId = args[1];
         activeUser.password = args[2];
     }
+    else if (login_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -213,6 +214,8 @@ int changePass(const vector<string> &args, ActiveUser &activeUser, string &ip, s
         cout << "Password changed successfully" << endl;
         activeUser.password = args[2];
     }
+    else if (changePass_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -297,6 +300,8 @@ int unregister(const vector<string> &args, ActiveUser &activeUser, string &ip, s
     }
     else if (unregister_result[1] == "WRP")
         cout << "Wrong password" << endl;
+    else if (unregister_result[1] == "ERR")
+    cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -370,6 +375,8 @@ int logout(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         cout << "User isn't registered" << endl;
     else if (logout_result[1] == "WRP")
         cout << "Wrong password" << endl;
+    else if (logout_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -428,6 +435,21 @@ bool verify_create(const vector<string> &args)
     if (day < 1 || day > 31 || month < 1 || month > 12 || hour < 0 || hour > 23 || minute < 0 || minute > 59)
     {
         cout << "Date values are out of range." << endl;
+        return false;
+    }
+    struct tm t = {};   // FIX ME
+    t.tm_mday = day;
+    t.tm_mon  = month - 1;
+    t.tm_year = year - 1900; // Number of years since 1900
+    t.tm_hour = hour;  
+    t.tm_min  = minute;
+    t.tm_sec  = 0;
+
+    time_t event_time = mktime(&t);
+    time_t current_time = time(NULL);
+    if (event_time < current_time)
+    {
+        cout << "Event date and time must be in the future." << endl;
         return false;
     }
     if (!std::filesystem::exists(args[2]))
@@ -525,7 +547,8 @@ int create(const vector<string> &args, ActiveUser &activeUser, string &ip, strin
         cout << "Password is not correct" << endl;
     else if (create_result[1] == "OK")
         cout << "Event created successfully. Event ID: " << create_result[2] << endl;
-    
+    else if (create_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -607,6 +630,8 @@ int close(const vector<string> &args, ActiveUser &activeUser, string &ip, string
         cout << "Event has already passed" << endl;
     else if (close_result[1] == "CLO")
         cout << "Event has already been closed" << endl;
+    else if (close_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -685,6 +710,8 @@ int myevents(const vector<string> &args, ActiveUser &activeUser, string &ip, str
     }
     else if (myevents_result[1] == "WRP")
         cout << "Password is not correct" << endl;
+    else if (myevents_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -701,13 +728,8 @@ bool verify_list(const vector<string> &args)
     return true;
 }
 
-int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
+int list(const vector<string> &args, string &ip, string &port, struct addrinfo* &res)
 {
-    if (!activeUser.loggedIn)
-    {
-        cout << "You must be logged in to list events." << endl;
-        return 1;
-    }
     if (!verify_list(args))
         return 1;
 
@@ -759,6 +781,8 @@ int list(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
             i +=5;
         }
     }
+    else if (list_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     
     freeaddrinfo(res);
     close(fd);
@@ -785,13 +809,8 @@ bool verify_show(const vector<string> &args)
     return true;
 }
 
-int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string &port, struct addrinfo* &res)
+int show(const vector<string> &args, string &ip, string &port, struct addrinfo* &res)
 {
-    if (!activeUser.loggedIn)
-    {
-        cout << "You must be logged in to show event details." << endl;
-        return 1;
-    }
     if (!verify_show(args))
         return 1;
 
@@ -896,6 +915,8 @@ int show(const vector<string> &args, ActiveUser &activeUser, string &ip, string 
             }
         }
     }
+    else if (show_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
 
     freeaddrinfo(res);
     close(fd);
@@ -984,6 +1005,8 @@ int reserve(const vector<string> &args, ActiveUser &activeUser, string &ip, stri
         cout << "Wrong password" << endl;
     else if (show_result[1] == "ACC")
         cout << "The reservation has been made successfully" << endl;
+    else if (show_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
 
     freeaddrinfo(res);
     close(fd);
@@ -1060,7 +1083,8 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
             i +=4;
         }
     }
-    
+    else if (myreservations_result[1] == "ERR")
+        cout << "Invalid syntax" << endl;
     freeaddrinfo(res);
     close(fd);
     return 0;

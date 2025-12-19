@@ -46,19 +46,12 @@ ssize_t send_TCP_reply(int fd, const string &message);
 
 int register_user(string UID, string password, struct stat &st);
 
-// Arguments
-// -UID - user ID
-// -input_pass - password to compare
 // Returns true if passwords match, false otherwise
 bool compare_passwords(string UID, string input_pass);
 
-// Arguments
-// -UID - user ID
 // Returns true if the user is logged in, false otherwise
 bool is_loggedin(string UID);
 
-// Arguments
-// -UID - user ID
 // Returns true if the user registered
 bool is_registered(string UID);
 
@@ -78,6 +71,8 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
 int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
 
 vector<string> get_event_data(string EID);
+
+string get_event_reservations(string EID);
 
 string get_event_state(string EID);
 

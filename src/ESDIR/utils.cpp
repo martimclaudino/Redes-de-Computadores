@@ -45,8 +45,47 @@ CommandType parse_command(const string &cmd)
 void verbose_mode(string client_ip, int client_port, string command)
 {
     cout << "-----------------------------" << endl;
-    cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << "\n" 
-         << "|Command: " << command; 
+    cout << "|IP: " << client_ip << "\n" << "|PORT: " << client_port << endl;
+    auto args = split(command);
+    switch (parse_command(args[0]))
+    {
+        case CMD_LOGIN:
+            cout << "|LOGIN request from user " << args[1] << endl;
+            break;
+        case CMD_CHANGEPASS:
+            cout << "|CHANGEPASS request from user " << args[1] << endl;
+            break;
+        case CMD_UNREGISTER:
+            cout << "|UNREGISTER request from user " << args[1] << endl;
+            break;
+        case CMD_LOGOUT:
+            cout << "|LOGOUT request from user " << args[1] << endl;
+            break;
+        case CMD_CREATE:
+            cout << "|CREATE request from user " << args[1] << endl;
+            break;
+        case CMD_CLOSE:
+            cout << "|CLOSE request from user " << args[1] << endl;
+            break;
+        case CMD_MYEVENTS:
+            cout << "|MYEVENTS request from " << args[1] << endl;
+            break;
+        case CMD_LIST:
+            cout << "|LIST request" << endl;
+            break;
+        case CMD_SHOW:
+            cout << "|SHOW request" << endl;
+            break;
+        case CMD_RESERVE:
+            cout << "|RESERVE request from " << args[1] << endl;
+            break;
+        case CMD_MYRESERVATIONS:
+            cout << "|MYRESERVATIONS request from " << args[1] << endl;
+            break;
+        default:
+            cout << "|INVALID request" << endl;
+            break;
+    }
 }
 
 void handle_sigchld(int sig) 
@@ -194,22 +233,18 @@ string read_token_from_socket(int fd)
 ServerResponse receive_TCP_by_size(int fd, int total_bytes_to_read)
 {
     ServerResponse server_response;
-    server_response.status = 0; // Assume 0 como sucesso inicial
+    server_response.status = 0;
+
     server_response.msg = "";
-    
-    // Buffer temporário pequeno (não faças char buffer[size] se o size for grande!)
     char buffer[1024]; 
     int total_read = 0;
 
     while (total_read < total_bytes_to_read)
     {
-        // 1. Calcular quanto falta ler
         int left_to_read = total_bytes_to_read - total_read;
         
-        // 2. Não tentar ler mais do que o tamanho do nosso buffer
         int bytes_to_ask = min(left_to_read, (int)sizeof(buffer));
 
-        // 3. Ler APENAS o necessário
         ssize_t n = read(fd, buffer, bytes_to_ask);
 
         if (n == -1)
@@ -218,17 +253,13 @@ ServerResponse receive_TCP_by_size(int fd, int total_bytes_to_read)
             server_response.status = -1;
             return server_response;
         }
-        if (n == 0) // Conexão fechada inesperadamente
+        if (n == 0) 
         {
             server_response.status = -1; 
             return server_response;
         }
-
-        // Adicionar o pedaço lido à string final
         server_response.msg.append(buffer, n);
         total_read += n;
-        
-        // cout << "DEBUG: Lidos " << total_read << "/" << total_bytes_to_read << endl;
     }
 
     return server_response;
@@ -553,6 +584,28 @@ vector<string> get_event_data(string EID)
     return event_data;
 }
 
+string get_event_reservations(string EID)
+{
+    string event_path = "src/ESDIR/EVENTS/" + EID;
+    string res_file = event_path + "/res.txt";
+    struct stat st;
+    if (stat(res_file.c_str(), &st) == -1) 
+    {
+        return "0";
+    }
+    int lock_fd = acquire_lock(res_file);
+    if (lock_fd == -1)
+    {
+        return "0";
+    }
+    ifstream r_file(res_file);
+    string reservations;
+    r_file >> reservations;
+    r_file.close();
+    release_lock(lock_fd);
+    return reservations;
+}
+
 string get_event_state(string EID)
 {
     string event_path = "src/ESDIR/EVENTS/" + EID;
@@ -589,13 +642,9 @@ string get_event_state(string EID)
         out_file.close(); 
         return "0";
     }
-    string reservations;
-    string res_file = event_path + "/res.txt";
-    ifstream r_file(res_file);
-    r_file >> reservations;
-    r_file.close();
+    string reservations = get_event_reservations(EID);
 
-    if (!(reservations < attendees))
+    if (!(stoi(reservations) < stoi(attendees)))
         return "2";
     
     return "1";
@@ -705,7 +754,7 @@ vector<string> list_reserved_events(string UID)
             string EID = filename.substr(2, 3);
             string date = filename.substr(6, 10);
             string time = filename.substr(17, 8);
-            int reservations = get_reservations(EID, UID, date, time);                  // FIX ME eu posso só ver no proprio ficheiro em vez de ir aos EVENTS/
+            int reservations = get_reservations(EID, UID, date, time);
             event_list += EID + " " + date + " " + time + " " + to_string(reservations) + " ";
             count++;
         }
@@ -805,6 +854,21 @@ ServerResponse verify_create(const vector<string> &args)
         response.status = -1;
         return response;
     }
+    struct tm t = {};   // FIX ME
+    t.tm_mday = day;
+    t.tm_mon  = month - 1;
+    t.tm_year = year - 1900; // Number of years since 1900
+    t.tm_hour = hour;  
+    t.tm_min  = minute;
+    t.tm_sec  = 0;
+
+    time_t event_time = mktime(&t);
+    time_t current_time = time(NULL);
+    if (event_time < current_time)
+    {
+        response.status = -1;
+        return response;
+    }
     return response;
 }
 
@@ -843,11 +907,6 @@ string get_next_eid()
 
 int create(vector<string> &args, int fd)
 {
-    for (const auto &arg : args) 
-    {
-        cout << "[" << arg << "] ";
-    }
-    cout << endl;
     ServerResponse create = verify_create(args);
     if (create.status == -1)
     {
@@ -1120,7 +1179,7 @@ int list(vector<string> &args, int fd)
     }
     string msg = "RLS OK " + event_list + "\n";
     send_TCP_reply(fd, msg);
-    cout << "[LIST]\n" << msg << endl; 
+
     return 0;
 }
 
@@ -1301,10 +1360,15 @@ int reserve(vector<string> &args, int fd)
     }
     // Update Event res.txt
     string res_file = "src/ESDIR/EVENTS/" + EID + "/res.txt";
-    string current_reservations;
-    ifstream r_file(res_file);
-    r_file >> current_reservations;
-    r_file.close();
+    string current_reservations = get_event_reservations(EID);
+    int max_attendance = stoi(get_event_data(EID)[3]);
+    if (stoi(current_reservations) + num_people > max_attendance)
+    {
+        int available_spots = max_attendance - stoi(current_reservations);
+        string msg = "RRI REJ " + to_string(available_spots) + "\n";
+        send_TCP_reply(fd, msg);
+        return 0;
+    }
     int new_current_reservations = num_people + stoi(current_reservations);
     int lock_fd = acquire_lock(res_file);
     if (lock_fd == -1)

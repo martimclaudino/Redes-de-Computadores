@@ -43,13 +43,6 @@ int main(int argc, char *argv[]) {
     {
         verbose = true;
     }
-    for (int i = 0; i < argc; i++)
-    {
-        cout << argv[i];
-    }
-    cout << endl;
-    if (verbose) cout << "Verbose mode ON" << endl;
-    else cout << "Verbose mode OFF" << endl;
 
     signal(SIGPIPE, SIG_IGN);
     // Signal handler setup
@@ -82,9 +75,7 @@ int main(int argc, char *argv[]) {
     FD_ZERO(&inputs);
     FD_SET(udp_fd, &inputs);        // Socket UDP
     FD_SET(tcp_listen_fd, &inputs); // Socket TCP Listen
-    struct timeval timeout;
 
-    // O max_fd tem de ser o maior número entre os FDs
     int max_fd = max(udp_fd, tcp_listen_fd); 
 
     cout << "Server running on port " << port << "..." << endl;
@@ -92,12 +83,9 @@ int main(int argc, char *argv[]) {
     while (true) 
     {
         testfds = inputs; // Reload mask (select changes testfds)
-
-        memset((void *)&timeout,0,sizeof(timeout));
-        timeout.tv_sec=10;
-
+        
         // Blocking select (needs timout)
-        int out_fds = select(max_fd + 1, &testfds, NULL, NULL, /*&timeout*/NULL);   // FIX ME  timout value
+        int out_fds = select(max_fd + 1, &testfds, NULL, NULL, NULL);
 
         switch (out_fds)
         {
