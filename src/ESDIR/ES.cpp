@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     if (verbose) cout << "Verbose mode ON" << endl;
     else cout << "Verbose mode OFF" << endl;
 
+    signal(SIGPIPE, SIG_IGN);
     // Signal handler setup
     struct sigaction sa;
     sa.sa_handler = handle_sigchld;

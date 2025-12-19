@@ -761,7 +761,10 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
 
     for (int i = start_index; i < total_reservations; i++) 
     {
-        msg += " " + events[i];
+        msg += events[i];
+        if (i < total_reservations - 1) 
+            msg += " ";
+        
     }
     msg += "\n";
     send_UDP_reply(fd, msg, addr, addrlen);
@@ -807,24 +810,34 @@ ServerResponse verify_create(const vector<string> &args)
 
 string get_next_eid() 
 {
-    int max_id = 0;
-    string path = "src/ESDIR/EVENTS";
+    string filename = "src/ESDIR/EVENTS/count.txt"; 
+    int cont_lock = acquire_lock(filename);
+    if (cont_lock == -1)
+    {
+        return "";
+    }
+    int current = 0;
 
-    if (!fs::exists(path)) 
-    {
-        fs::create_directories(path);
-        return "001";
+    ifstream in_file(filename);
+    if (in_file.is_open()) {
+        in_file >> current;
+        in_file.close();
     }
-    for (const auto & entry : fs::directory_iterator(path)) 
+    int next = current + 1;
+    ofstream out_file(filename);
+    if (out_file.is_open()) {
+        out_file << next;
+        out_file.close();
+    } 
+    else 
     {
-        if (entry.is_directory()) {
-            string dirname = entry.path().filename().string();
-            int id = stoi(dirname);
-            if (id > max_id) max_id = id;
-        }
+        release_lock(cont_lock);
+        return "";
     }
+    release_lock(cont_lock);
     stringstream ss;
-    ss << setfill('0') << setw(3) << (max_id + 1);
+    ss << setfill('0') << setw(3) << next;
+    
     return ss.str();
 }
 
@@ -1078,6 +1091,7 @@ int list(vector<string> &args, int fd)
     string events_path = "src/ESDIR/EVENTS/";
     string event_list = "";
     int event_count = 0;
+    int number_of_events = distance(fs::directory_iterator(events_path), fs::directory_iterator{});
 
     for (const auto & entry : fs::directory_iterator(events_path)) 
     {
@@ -1090,7 +1104,11 @@ int list(vector<string> &args, int fd)
             string event_date = event_data[4];
             string event_hour = event_data[5];
 
-            event_list += EID + " " + event_name + " " + state + " " + event_date + " " + event_hour + " ";
+            event_list += EID + " " + event_name + " " + state + " " + event_date + " " + event_hour;
+            if (event_count < number_of_events - 1)
+            {
+                event_list += " ";
+            }
             event_count++;
         }
     }
@@ -1102,6 +1120,7 @@ int list(vector<string> &args, int fd)
     }
     string msg = "RLS OK " + event_list + "\n";
     send_TCP_reply(fd, msg);
+    cout << "[LIST]\n" << msg << endl; 
     return 0;
 }
 

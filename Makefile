@@ -66,6 +66,7 @@ clean_db:
 	mkdir EVENTS
 	mkdir $(ES_DIR)/USERS
 	mkdir $(ES_DIR)/EVENTS
+	echo "0" > $(ES_DIR)/EVENTS/count.txt
 
 # ------------------- Run Targets -------------------
 run_server: ES
