@@ -55,4 +55,8 @@ typedef struct
 
 vector<string> split(const string &line);
 
+int acquire_lock(const string& filepath);
+
+void release_lock(int fd);
+
 #endif

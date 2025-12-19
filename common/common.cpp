@@ -12,6 +12,9 @@
 #include <filesystem>
 #include <fstream>
 #include <filesystem>
+#include <sys/file.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 using namespace std; 
 
@@ -28,4 +31,33 @@ vector<string> split(const string &line)
         tokens.push_back(word);
 
     return tokens;
+}
+
+int acquire_lock(const string& filepath) 
+{
+    int fd = open(filepath.c_str(), O_CREAT | O_RDWR, 0666);
+    if (fd == -1) 
+    {
+        perror("Lock file open error");
+        return -1;
+    }
+
+    // LOCK_EX: Exclusive lock. If another process holds the lock,
+    // this function BLOCKS (waits) until the other releases it.
+    if (flock(fd, LOCK_EX) == -1) 
+    {
+        perror("Lock error");
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+void release_lock(int fd) 
+{
+    if (fd != -1) 
+    {
+        flock(fd, LOCK_UN);
+        close(fd);          
+    }
 }

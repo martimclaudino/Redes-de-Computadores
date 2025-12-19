@@ -253,9 +253,15 @@ int register_user(string UID, string password, struct stat &st)
         mkdir((user_path + "/CREATED").c_str(), 0700);
         mkdir((user_path + "/RESERVED").c_str(), 0700);
     }
+    int lock_fd = acquire_lock(pass_file);
+    if (lock_fd == -1)
+    {
+        return -1;
+    }
     ofstream p_file(pass_file);
     p_file << password;
     p_file.close();
+    release_lock(lock_fd);
     login_user(UID);
     return 0;
 }
@@ -321,15 +327,27 @@ void login_user(string UID)
 {
     string user_path = "src/ESDIR/USERS/" + UID;
     string login_file = user_path + "/login.txt";
+    int lock_fd = acquire_lock(login_file);
+    if (lock_fd == -1)
+    {
+        return ;
+    }
     ofstream l_file(login_file);
     l_file.close();
+    release_lock(lock_fd);
 }
 
 void logout_user(string UID)
 {
     string user_path = "src/ESDIR/USERS/" + UID;
     string login_file = user_path + "/login.txt";
+    int lock_fd = acquire_lock(login_file);
+    if (lock_fd == -1)
+    {
+        return ;
+    }
     delete_file(login_file);
+    release_lock(lock_fd);
 }
 
 int login(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
@@ -398,7 +416,13 @@ int unregister(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
     logout_user(UID);
     string user_path = "src/ESDIR/USERS/" + UID;
     string pass_file = user_path + "/password.txt";
-    delete_file(pass_file.c_str());
+    int lock_fd = acquire_lock(pass_file);
+    if (lock_fd == -1)
+    {
+        return 1;
+    }
+    delete_file(pass_file);
+    release_lock(lock_fd);
     string msg = "RUR OK\n";
     send_UDP_reply(fd, msg, addr, addrlen);
     return 0;
@@ -452,6 +476,11 @@ vector<string> get_event_data(string EID)
     {
         return {};
     }
+    int lock_fd = acquire_lock(start_file);
+    if (lock_fd == -1)
+    {
+        return {};
+    }
     ifstream e_file(start_file);
     vector<string> event_data;
     string arg;
@@ -460,6 +489,7 @@ vector<string> get_event_data(string EID)
         event_data.push_back(arg);
     }
     e_file.close();
+    release_lock(lock_fd);
     return event_data;
 }
 
@@ -793,13 +823,26 @@ int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
     string attendance = args[6];
     // start.txt file
     string start_file_path = event_path + "/start.txt";
+    int start_lock_fd = acquire_lock(start_file_path);
+    if (start_lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream start_file(start_file_path);
     start_file << UID << " " << event_name << " " << file_name << " " << attendance << " " << date << " " << hour << "\n";
     start_file.close(); 
+    release_lock(start_lock_fd);
     // res.txt
     string res_file_path = event_path + "/res.txt";
+    int res_lock_fd = acquire_lock(res_file_path);
+    if (res_lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream res_file(res_file_path);
     res_file << "0" << "\n";
+    res_file.close();
+    release_lock(res_lock_fd);
     // DESCRIPTION DIR
     string description_path = "src/ESDIR/EVENTS/" + EID + "/DESCRIPTION";
     if (!fs::create_directories(description_path)) 
@@ -809,6 +852,11 @@ int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
         return 0;
     }
     string description_file_path = description_path + "/" + file_name;
+    int desc_lock_fd = acquire_lock(description_file_path);
+    if (desc_lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream description_file(description_file_path);
     description_file << "\n";
     // Fdata starts at args[9]
@@ -819,6 +867,7 @@ int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
             description_file << " ";
     }
     description_file.close();
+    release_lock(desc_lock_fd);
     string msg = "RCE OK " + EID + "\n";
     send_TCP_reply(fd, msg);
 
@@ -911,9 +960,15 @@ int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t
         return 0;
     }
     string end_file_path = "src/ESDIR/EVENTS/" + EID + "/end.txt";
+    int lock_fd = acquire_lock(end_file_path);
+    if (lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream end_file(end_file_path);
     end_file << event_data[4] << " " << event_data[5] << "\n";
     end_file.close();
+    release_lock(lock_fd);
     string msg = "RCL OK\n";
     send_TCP_reply(fd, msg);
     return 0;
@@ -1137,9 +1192,15 @@ int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t add
     r_file >> current_reservations;
     r_file.close();
     int new_current_reservations = num_people + stoi(current_reservations);
+    int lock_fd = acquire_lock(res_file);
+    if (lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream r_file_out(res_file);
     r_file_out << to_string(new_current_reservations) << "\n";
     r_file_out.close();
+    release_lock(lock_fd);
 
     // Update User RESERVED
     int reservation_count = count_user_reservations(UID) + 1;
@@ -1151,16 +1212,28 @@ int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t add
     stringstream date_time;
     date_time << put_time(local_time, "%d-%m-%Y-%H:%M:%S");
     string reservation_file = reservation_path + "/" + to_string(reservation_count) + "-" + EID + "-" + date_time.str() + ".txt";
+    int res_lock_fd = acquire_lock(reservation_file);
+    if (res_lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream user_res_file(reservation_file);
     user_res_file << to_string(num_people) << "\n";
     user_res_file.close();
+    release_lock(res_lock_fd);
 
     // Update Event RESERVATIONS
     string event_reservation_path = "src/ESDIR/EVENTS/" + EID + "/RESERVATIONS";
     string event_reservation_file = event_reservation_path + "/" + UID + "-" + date_time.str() + ".txt";
+    int event_lock_fd = acquire_lock(event_reservation_file);
+    if (event_lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream event_res_file(event_reservation_file);
     event_res_file << to_string(num_people) << "\n";
     event_res_file.close();
+    release_lock(event_lock_fd);
     string msg = "RRI ACC\n";
     send_TCP_reply(fd, msg);
     return 0;
@@ -1219,9 +1292,15 @@ int changePass(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t 
     }
     string user_path = "src/ESDIR/USERS/" + UID;
     string pass_file = user_path + "/password.txt";
+    int lock_fd = acquire_lock(pass_file);
+    if (lock_fd == -1)
+    {
+        return 1;
+    }
     ofstream p_file(pass_file);
     p_file << new_password;
     p_file.close();
+    release_lock(lock_fd);
     string msg = "RPC OK\n";
     send_TCP_reply(fd, msg);
     return 0;
