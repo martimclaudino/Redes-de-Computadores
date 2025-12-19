@@ -88,26 +88,26 @@ ServerResponse verify_create(const vector<string> &args);
 
 string get_next_eid();
 
-int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int create(vector<string> &args, int fd);
 
 ServerResponse verify_close(vector<string> &args);
 
-int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int close_event(vector<string> &args, int fd);
 
-int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int list(vector<string> &args, int fd);
 
 ServerResponse verify_list(const vector<string> &args);
 
 ServerResponse verify_show(const vector<string> &args);
 
-int show(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int show(vector<string> &args, int fd);
 
 ServerResponse verify_reserve(const vector<string> &args);
 
 int count_user_reservations(string UID);
 
-int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int reserve(vector<string> &args, int fd);
 
 ServerResponse verify_changePass(const vector<string> &args);
 
-int changePass(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen);
+int changePass(vector<string> &args, int fd);

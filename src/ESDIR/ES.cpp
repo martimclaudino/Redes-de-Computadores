@@ -166,6 +166,9 @@ int main(int argc, char *argv[]) {
                             if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
                             cout << "Invalid command." << endl;
                             break;
+
+                        default:
+                            break;
                     }
                 }
 
@@ -214,38 +217,43 @@ int main(int argc, char *argv[]) {
                         {
                             case CMD_CREATE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                create(args, new_tcp_fd, client_addr, addr_len);
+                                create(args, new_tcp_fd);
                                 break;
 
                             case CMD_CLOSE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                close_event(args, new_tcp_fd, client_addr, addr_len);
+                                close_event(args, new_tcp_fd);
                                 break;
 
                             case CMD_LIST: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                list(args, new_tcp_fd, client_addr, addr_len);
+                                list(args, new_tcp_fd);
                                 break;
 
                             case CMD_SHOW: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                show(args, new_tcp_fd, client_addr, addr_len);
+                                show(args, new_tcp_fd);
                                 break;
 
                             case CMD_RESERVE: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                reserve(args, new_tcp_fd, client_addr, addr_len);
+                                reserve(args, new_tcp_fd);
                                 break;
 
                             case CMD_CHANGEPASS: 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
-                                changePass(args, new_tcp_fd, client_addr, addr_len);
+                                changePass(args, new_tcp_fd);
                                 break;
 
                             case CMD_INVALID: 
+                            { 
                                 if (verbose) verbose_mode(client_ip, client_port, client_request.msg);
                                 string msg = "INV ERR\n";
-                                send_UDP_reply(new_tcp_fd, msg, client_addr, addr_len);
+                                send_TCP_reply(new_tcp_fd, msg);
+                                break; 
+                            }
+                            
+                            default:
                                 break;
                         }
 

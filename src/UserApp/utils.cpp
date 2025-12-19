@@ -1065,6 +1065,4 @@ int myreservations(const vector<string> &args, ActiveUser &activeUser, string &i
     return 0;
 }
 
-// FIX ME nas funções que criei se houver um erro a receber ou mandar mensagens do servidor, dá logo return mas eu tenho de dar free e close
-
 #endif

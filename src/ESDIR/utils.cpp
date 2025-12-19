@@ -439,7 +439,6 @@ int logout(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addr
     }
     string UID = args[1];
     string password = args[2];
-    struct stat st;
 
     if (!is_loggedin(UID)) 
     {
@@ -511,7 +510,7 @@ string get_event_state(string EID)
     attendees = event_data[3];
     date = event_data[4];
     hour = event_data[5];
-    struct tm t = {0};
+    struct tm t = {};
     t.tm_mday = stoi(date.substr(0, 2));
     t.tm_mon  = stoi(date.substr(3, 2)) - 1;
     t.tm_year = stoi(date.substr(6, 4)) - 1900; // Number of years since 1900
@@ -691,13 +690,11 @@ int myreservations(vector<string> &args, int fd, struct sockaddr_in addr, sockle
     int total_reservations = events.size();
     int limit = 50;
     int start_index = 0;
-    int count_to_send = total_reservations;
 
     // Only the last 50 reservations
     if (total_reservations > limit) 
     {
         start_index = total_reservations - limit;
-        count_to_send = limit;
     }
     string msg = "RMR OK "; 
 
@@ -775,7 +772,7 @@ string get_next_eid()
     return ss.str();
 }
 
-int create(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int create(vector<string> &args, int fd)
 {
     ServerResponse create = verify_create(args);
     if (create.status == -1)
@@ -899,7 +896,7 @@ ServerResponse verify_close(vector<string> &args)
     return response;
 }
 
-int close_event(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int close_event(vector<string> &args, int fd)
 {
     ServerResponse close_event = verify_close(args);
     if (close_event.status == -1)
@@ -991,7 +988,7 @@ ServerResponse verify_list(const vector<string> &args)
     return response;
 }
 
-int list(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int list(vector<string> &args, int fd)
 {
     ServerResponse list = verify_list(args);
     if (list.status == -1)
@@ -1053,7 +1050,7 @@ ServerResponse verify_show(const vector<string> &args)
     return response;
 }
 
-int show(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int show(vector<string> &args, int fd)
 {
     ServerResponse show = verify_show(args);
     if (show.status == -1)
@@ -1141,7 +1138,7 @@ int count_user_reservations(string UID)
     return count;
 }
 
-int reserve(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int reserve(vector<string> &args, int fd)
 {
     ServerResponse reserve = verify_reserve(args);
     if (reserve.status == -1)
@@ -1260,7 +1257,7 @@ ServerResponse verify_changePass(const vector<string> &args)
     return response;
 }
 
-int changePass(vector<string> &args, int fd, struct sockaddr_in addr, socklen_t addrlen)
+int changePass(vector<string> &args, int fd)
 {
     ServerResponse changePass = verify_changePass(args);
     if (changePass.status == -1)
