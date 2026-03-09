@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
                         tv.tv_usec = 0;
                         setsockopt(new_tcp_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
                         char buffer[4];
-                        recv(new_tcp_fd, buffer, 3, MSG_PEEK);
+                        recv(new_tcp_fd, buffer, 3, MSG_PEEK);  
                         buffer[3] = '\0';
                         string command(buffer);
 

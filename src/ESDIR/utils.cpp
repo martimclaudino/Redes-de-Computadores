@@ -62,7 +62,8 @@ void verbose_mode(string client_ip, int client_port, string command)
             cout << "|LOGOUT request from user " << args[1] << endl;
             break;
         case CMD_CREATE:
-            cout << "|CREATE request from user " << args[1] << endl;
+            if (args.size() > 1) cout << "|CREATE request from user " << args[1] << endl;
+            else cout << "|CREATE request" << endl; // Para quando vem do TCP (só "CRE")
             break;
         case CMD_CLOSE:
             cout << "|CLOSE request from user " << args[1] << endl;
